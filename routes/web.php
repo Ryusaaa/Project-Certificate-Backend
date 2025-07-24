@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DataActivityController;
 use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
+use App\Http\Controllers\DataActivityTypeController;
 
 
 
