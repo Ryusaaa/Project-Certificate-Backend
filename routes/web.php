@@ -5,6 +5,8 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DataActivityController;
+use App\Http\Controllers\Instruktur\LoginInstrukturController;
+use App\Http\Controllers\Instruktur\InstrukturManagementController;
 
 
 
