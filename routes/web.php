@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\LoginController;
+use App\Http\Controllers\Admin\UserApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DataActivityController;
@@ -13,4 +15,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
+Route::post('admins/login', [LoginController::class, 'login']);
+Route::resource('admins', UserApiController::class);
+Route::post('admins/create', [UserApiController::class, 'store']);
+Route::put('admins/edit/{admin}', [UserApiController::class, 'update']);
+Route::delete('admins/delete/{admin}', [UserApiController::class, 'destroy']);
