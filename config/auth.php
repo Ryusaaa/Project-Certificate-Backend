@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'instruktur' => [
+            'driver' => 'sanctum',
+            'provider' => 'instrukturs',
+        ],
     ],
 
     /*
@@ -63,6 +67,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+        'instrukturs' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Instruktur::class,
         ],
 
         // 'users' => [
