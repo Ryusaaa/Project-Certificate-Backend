@@ -6,5 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DataActivityType extends Model
 {
-    //
+    protected $fillable = [
+        'type_name',
+    ];
 }

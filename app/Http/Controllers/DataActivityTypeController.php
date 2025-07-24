@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DataActivityType;
 use Illuminate\Http\Request;
 
 class DataActivityTypeController extends Controller
@@ -11,7 +12,11 @@ class DataActivityTypeController extends Controller
      */
     public function index()
     {
-        //
+        $data = DataActivityType::all();
+        return response([
+            'data' => $data,
+            'message' => 'Data activity types retrieved successfully.'
+        ], 200);
     }
 
     /**
@@ -19,7 +24,11 @@ class DataActivityTypeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = DataActivityType::create($request->all());
+        return response([
+            'data' => $data,
+            'message' => 'Data activity type created successfully.'
+        ], 201);
     }
 
     /**
@@ -27,7 +36,16 @@ class DataActivityTypeController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $data = DataActivityType::find($id);
+        if (!$data) {
+            return response([
+                'message' => 'Data activity type not found.'
+            ], 404);
+        }
+        return response([
+            'data' => $data,
+            'message' => 'Data activity type retrieved successfully.'
+        ], 200);
     }
 
     /**
@@ -35,7 +53,17 @@ class DataActivityTypeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $data = DataActivityType::find($id);
+        if (!$data) {
+            return response([
+                'message' => 'Data activity type not found.'
+            ], 404);
+        }
+        $data->update($request->all());
+        return response([
+            'data' => $data,
+            'message' => 'Data activity type updated successfully.'
+        ], 200);
     }
 
     /**
@@ -43,6 +71,15 @@ class DataActivityTypeController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $data = DataActivityType::find($id);
+        if (!$data) {
+            return response([
+                'message' => 'Data activity type not found.'
+            ], 404);
+        }
+        $data->delete();
+        return response([
+            'message' => 'Data activity type deleted successfully.'
+        ], 200);
     }
 }
