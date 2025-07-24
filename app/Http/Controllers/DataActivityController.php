@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DataActivity;
 use Illuminate\Http\Request;
 
 class DataActivityController extends Controller
@@ -11,7 +12,11 @@ class DataActivityController extends Controller
      */
     public function index()
     {
-        //
+        $data = DataActivity::with('activityType')->get();
+        return response([
+            'data' => $data,
+            'message' => 'Data activities Founded.'
+        ], 200);
     }
 
     /**
@@ -19,7 +24,18 @@ class DataActivityController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'activity_name' => 'required|string|max:255',
+            'activity_type_id' => 'required|exists:data_activity_types,id',
+            'description' => 'nullable|string',
+        ]);
+
+        $dataActivity = DataActivity::create($request->all());
+
+        return response([
+            'data' => $dataActivity,
+            'message' => 'Data activity created successfully.'
+        ], 201);
     }
 
     /**
@@ -27,7 +43,17 @@ class DataActivityController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $dataActivity = DataActivity::with('activityType')->find($id);
+
+        if (!$dataActivity) {
+            return response([
+                'message' => 'Data activity not found.'
+            ], 404);
+        }
+
+        return response([
+            'data' => $dataActivity
+        ], 200);
     }
 
     /**
@@ -35,7 +61,26 @@ class DataActivityController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $dataActivity = DataActivity::find($id);
+
+        if (!$dataActivity) {
+            return response([
+                'message' => 'Data activity not found.'
+            ], 404);
+        }
+
+        $request->validate([
+            'activity_name' => 'required|string|max:255',
+            'activity_type_id' => 'required|exists:data_activity_types,id',
+            'description' => 'nullable|string',
+        ]);
+
+        $dataActivity->update($request->all());
+
+        return response([
+            'data' => $dataActivity,
+            'message' => 'Data activity updated successfully.'
+        ], 200);
     }
 
     /**
@@ -43,6 +88,18 @@ class DataActivityController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $dataActivity = DataActivity::find($id);
+
+        if (!$dataActivity) {
+            return response([
+                'message' => 'Data activity not found.'
+            ], 404);
+        }
+
+        $dataActivity->delete();
+
+        return response([
+            'message' => 'Data activity deleted successfully.'
+        ], 200);
     }
 }
