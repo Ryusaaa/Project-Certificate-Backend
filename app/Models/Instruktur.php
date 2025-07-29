@@ -18,8 +18,6 @@ class Instruktur extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'phone',
-        'asal_instansi',
         'email',
         'password',
     ];

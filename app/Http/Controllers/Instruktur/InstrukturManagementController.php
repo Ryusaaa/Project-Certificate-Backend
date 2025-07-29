@@ -37,8 +37,6 @@ class InstrukturManagementController extends Controller
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
-                'phone' => 'nullable|string|max:255',
-                'asal_instansi' => 'required|string|max:255',
                 'email' => 'required|email|unique:instrukturs,email',
                 'password' => 'required|string|min:6'
             ]);
@@ -46,8 +44,6 @@ class InstrukturManagementController extends Controller
 
         $instruktur = Instruktur::create([
             'name' => $request->name,
-            'phone' => $request->phone,
-            'asal_instansi' => $request->asal_instansi,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
@@ -74,13 +70,11 @@ class InstrukturManagementController extends Controller
         
         $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'phone' => 'sometimes|nullable|string|max:255',
-            'asal_instansi' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:instrukturs,email,' . $instruktur->id,
             'password' => 'sometimes|required|string|min:6'
         ]);
 
-        $instruktur->update($request->only(['name', 'phone', 'asal_instansi', 'email', 'password']));
+        $instruktur->update($request->only(['name', 'email', 'password']));
 
         return response()->json($instruktur, 200);
         } catch (ValidationException $e) {

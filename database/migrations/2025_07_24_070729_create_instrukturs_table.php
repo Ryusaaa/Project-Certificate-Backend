@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('instrukturs', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('phone')->nullable();
-            $table->string('asal_instansi');
             $table->string('email')->unique();
             $table->string('password');
             $table->rememberToken();
