@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DataActivity;
 use Illuminate\Http\Request;
+use App\Models\Instruktur;
 
 class DataActivityController extends Controller
 {
@@ -46,7 +47,7 @@ class DataActivityController extends Controller
             'instruktur_id' => 'required|exists:instrukturs,id',
         ]);
 
-        $instruktur = \App\Models\Instruktur::where('name', $request->instruktur_name)->first();
+        $instruktur = Instruktur::where('id', $request->instruktur_id)->first();
 
         if (!$instruktur) {
             return response([
