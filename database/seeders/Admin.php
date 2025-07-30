@@ -19,6 +19,7 @@ class Admin extends Seeder
             'name' => 'Admin',
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
+            'role_id' => 1,
         ]);
 
         $this->command->info('Admin user created successfully.');

@@ -32,7 +32,7 @@ class LoginController extends Controller
             ]);
 
             // Cek email ada atau tidak
-            $admin = Admin::where('email', $request->email)->first();
+            $admin = Admin::where('email', $request->email)->with('role')->first();
             if (!$admin) {
                 return response()->json([
                     'message' => 'Email tidak terdaftar'
@@ -51,7 +51,12 @@ class LoginController extends Controller
             return response()->json([
                 'message' => 'Login berhasil',
                 'token' => $token,
-                'admin' => $admin
+                'admin' => [
+                    'id' => $admin->id,
+                    'name' => $admin->name,
+                    'email' => $admin->email,
+                    'role_id ' => $admin->role->id,
+                ]
             ], 200);
 
         } catch (\Exception $e) {
@@ -65,6 +70,30 @@ class LoginController extends Controller
 
             return response()->json([
                 'message' => 'Login gagal',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function logout(Request $request)
+    {
+        try {
+            // Check if user is authenticated
+            if (!$request->user()) {
+                return response()->json([
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            // Delete the current access token
+            $request->user()->tokens()->delete();
+
+            return response()->json([
+                'message' => 'Logout berhasil'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Logout gagal',
                 'error' => $e->getMessage()
             ], 500);
         }

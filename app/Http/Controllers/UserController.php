@@ -30,6 +30,7 @@ class UserController extends Controller
             'no_hp' => 'required|string|max:15',
             'asal_institusi' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
+            'role_id' => 'required|exists:roles,id', 
         ]);
 
         $validated['password'] = bcrypt($validated['password']);
@@ -111,4 +112,6 @@ class UserController extends Controller
             'data' => $data
         ], 200);
     }
+
+   
 }
