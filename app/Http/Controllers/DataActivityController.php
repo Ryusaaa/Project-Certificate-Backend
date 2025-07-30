@@ -43,7 +43,7 @@ class DataActivityController extends Controller
             'date' => 'required|date',
             'activity_type_id' => 'required|exists:data_activity_types,id',
             'description' => 'nullable|string',
-            'instruktur_name' => 'required|string', 
+            'instruktur_id' => 'required|exists:instrukturs,id',
         ]);
 
         $instruktur = \App\Models\Instruktur::where('name', $request->instruktur_name)->first();
