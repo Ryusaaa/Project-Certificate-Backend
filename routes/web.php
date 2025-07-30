@@ -4,6 +4,7 @@
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\UserApiController;
+use App\Http\Controllers\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DataActivityController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\DataActivityTypeController;
 Route::resource('data-activity-types', DataActivityTypeController::class);
 Route::resource('data-activities', DataActivityController::class);
 Route::resource('users', UserController::class);
+Route::post('roles', [RoleController::class, 'store']);
 
 Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
     ->name('data-activities.show');
