@@ -12,9 +12,23 @@ class DataActivityController extends Controller
      */
     public function index()
     {
-        $data = DataActivity::with('activityType')->get();
+        $data = DataActivity::with('activityType', 'instruktur')->get();
+
+        $result = $data->map(function ($item) {
+        return [
+            'id' => $item->id,
+            'activity_name' => $item->activity_name,
+            'date' => $item->date,
+            'activity_type_id' => $item->activity_type_id,
+            'activity_type_name' => $item->activityType ? $item->activityType->type_name : null,
+            'description' => $item->description,
+            'instruktur_id' => $item->instruktur_id,
+            'instruktur_name' => $item->instruktur ? $item->instruktur->name : null,
+        ];
+    });
+
         return response([
-            'data' => $data,
+            'data' => $result,
             'message' => 'Data activities Founded.'
         ], 200);
     }
@@ -29,9 +43,24 @@ class DataActivityController extends Controller
             'date' => 'required|date',
             'activity_type_id' => 'required|exists:data_activity_types,id',
             'description' => 'nullable|string',
+            'instruktur_name' => 'required|string', 
         ]);
 
-        $dataActivity = DataActivity::create($request->all());
+        $instruktur = \App\Models\Instruktur::where('name', $request->instruktur_name)->first();
+
+        if (!$instruktur) {
+            return response([
+                'message' => 'Instruktur not found.'
+            ], 404);
+        }
+
+        $dataActivity = DataActivity::create([
+            'activity_name' => $request->activity_name,
+            'date' => $request->date,
+            'activity_type_id' => $request->activity_type_id,
+            'description' => $request->description,
+            'instruktur_id' => $instruktur->id,
+        ]);
 
         return response([
             'data' => $dataActivity,
@@ -75,6 +104,7 @@ class DataActivityController extends Controller
             'date' => 'required|date',
             'activity_type_id' => 'required|exists:data_activity_types,id',
             'description' => 'nullable|string',
+            'instruktur_id' => 'required|exists:instrukturs,id', 
         ]);
 
         $dataActivity->update($request->all());
