@@ -12,7 +12,7 @@ use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
 use App\Http\Controllers\DataActivityTypeController;
 
-Route::options('{any}', function () {
+Route::get('{any}', function () {
     return response()->json([], 204);
 })->where('any', '.*');
 
