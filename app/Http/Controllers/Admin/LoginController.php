@@ -32,7 +32,7 @@ class LoginController extends Controller
             ]);
 
             // Cek email ada atau tidak
-            $admin = Admin::where('email', $request->email)->first();
+            $admin = Admin::where('email', $request->email)->with('role')->first();
             if (!$admin) {
                 return response()->json([
                     'message' => 'Email tidak terdaftar'
@@ -51,7 +51,12 @@ class LoginController extends Controller
             return response()->json([
                 'message' => 'Login berhasil',
                 'token' => $token,
-                'admin' => $admin
+                'admin' => [
+                    'id' => $admin->id,
+                    'name' => $admin->name,
+                    'email' => $admin->email,
+                    'role' => $admin->role ? $admin->role->name : null,
+                ]
             ], 200);
 
         } catch (\Exception $e) {

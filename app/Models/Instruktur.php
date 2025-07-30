@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use \App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,6 +21,7 @@ class Instruktur extends Authenticatable
         'name',
         'email',
         'password',
+        'role_id',
     ];
 
     /**
@@ -42,5 +44,9 @@ class Instruktur extends Authenticatable
         return [
             'password' => 'hashed',
         ];
+    }
+     public function role() 
+    {
+        return $this->belongsTo(Role::class, 'role_id');  
     }
 }
