@@ -23,9 +23,11 @@ Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
     ->name('data-activities.show');
 
 Route::post('instruktur/login', [LoginInstrukturController::class, 'logininstruktur']);
+Route::post('instruktur/logout', [LoginInstrukturController::class, 'logout'])->middleware('auth:sanctum');
 Route::apiResource('instruktur', InstrukturManagementController::class);
 
 Route::post('admins/login', [LoginController::class, 'login']);
+Route::post('admins/logout', [LoginController::class, 'logout'])->middleware('auth:sanctum');
 Route::resource('admins', UserApiController::class);
 Route::post('admins/create', [UserApiController::class, 'store']);
 Route::put('admins/edit/{admin}', [UserApiController::class, 'update']);
