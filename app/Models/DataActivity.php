@@ -13,6 +13,7 @@ class DataActivity extends Model
         'date',
         'activity_type_id',
         'description',
+        'instruktur_id'
     ];
 
     protected $casts = [
@@ -22,5 +23,10 @@ class DataActivity extends Model
     public function activityType()
     {
         return $this->belongsTo(DataActivityType::class, 'activity_type_id');
+    }
+
+    public function instruktur()
+    {
+        return $this->belongsTo(Instruktur::class, 'instruktur_id');
     }
 }
