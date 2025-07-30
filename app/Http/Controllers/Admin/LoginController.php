@@ -55,7 +55,7 @@ class LoginController extends Controller
                     'id' => $admin->id,
                     'name' => $admin->name,
                     'email' => $admin->email,
-                    'role' => $admin->role ? $admin->role->name : null,
+                    'role_id' => $admin->role ? $admin->role->name : null,
                 ]
             ], 200);
 
