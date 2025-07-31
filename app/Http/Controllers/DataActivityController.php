@@ -41,7 +41,7 @@ class DataActivityController extends Controller
     {
         $request->validate([
             'activity_name' => 'required|string|max:255',
-            'date' => 'required|date',
+            'date' => 'required|date|after_or_equal:today',
             'activity_type_id' => 'required|exists:data_activity_types,id',
             'description' => 'nullable|string',
             'instruktur_id' => 'required|exists:instrukturs,id',
