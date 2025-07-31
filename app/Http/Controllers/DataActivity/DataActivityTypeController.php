@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\DataActivityType;
+namespace App\Http\Controllers\DataActivity;
 
 
 use App\Http\Controllers\Controller;

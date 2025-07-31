@@ -8,9 +8,9 @@ use App\Http\Controllers\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DataActivity\DataActivityController;
+use App\Http\Controllers\DataActivity\DataActivityTypeController;
 use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
-use App\Http\Controllers\DataActivityType\DataActivityTypeController;
 
 
 
