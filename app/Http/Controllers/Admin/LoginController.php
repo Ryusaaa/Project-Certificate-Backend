@@ -55,7 +55,7 @@ class LoginController extends Controller
                     'id' => $admin->id,
                     'name' => $admin->name,
                     'email' => $admin->email,
-                    'role_id' => $admin->role ? $admin->role->name : null,
+                    'role_id ' => $admin->role->id,
                 ]
             ], 200);
 
@@ -70,6 +70,30 @@ class LoginController extends Controller
 
             return response()->json([
                 'message' => 'Login gagal',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function logout(Request $request)
+    {
+        try {
+            // Check if user is authenticated
+            if (!$request->user()) {
+                return response()->json([
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            // Delete the current access token
+            $request->user()->tokens()->delete();
+
+            return response()->json([
+                'message' => 'Logout berhasil'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Logout gagal',
                 'error' => $e->getMessage()
             ], 500);
         }

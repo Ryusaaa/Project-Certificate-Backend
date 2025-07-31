@@ -55,8 +55,25 @@ class LoginInstrukturController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        try {
+            // Check if user is authenticated
+            if (!$request->user()) {
+                return response()->json([
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
 
-        return response()->json(['message' => 'Logged out successfully'], 200);
+            // Delete the current access token
+            $request->user()->tokens()->delete();
+
+            return response()->json([
+                'message' => 'Logout berhasil'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Logout gagal',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
