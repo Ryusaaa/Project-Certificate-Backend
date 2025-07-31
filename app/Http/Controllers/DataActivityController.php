@@ -11,28 +11,56 @@ class DataActivityController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data = DataActivity::with('activityType', 'instruktur')->get();
+    $query = DataActivity::with('activityType', 'instruktur');
 
-        $result = $data->map(function ($item) {
+    // SEARCH (search di nama aktivitas, instruktur, tipe)
+    if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('activity_name', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%")
+              ->orWhereHas('instruktur', function ($q2) use ($search) {
+                  $q2->where('name', 'like', "%{$search}%");
+              })
+              ->orWhereHas('activityType', function ($q3) use ($search) {
+                  $q3->where('type_name', 'like', "%{$search}%");
+              });
+        });
+    }
+
+    // SORT (default: by activity_name asc)
+    $sortKey = $request->input('sortKey', 'activity_name');
+    $sortOrder = $request->input('sortOrder', 'asc');
+    $query->orderBy($sortKey, $sortOrder);
+
+    // PAGINATION
+    $perPage = $request->input('perPage', 10);
+    $activities = $query->paginate($perPage);
+
+    // Format response
+    $result = $activities->getCollection()->map(function ($item) {
         return [
             'id' => $item->id,
             'activity_name' => $item->activity_name,
             'date' => $item->date,
             'activity_type_id' => $item->activity_type_id,
-            'activity_type_name' => $item->activityType ? $item->activityType->type_name : null,
+            'activity_type_name' => $item->activityType->type_name ?? null,
             'description' => $item->description,
             'instruktur_id' => $item->instruktur_id,
-            'instruktur_name' => $item->instruktur ? $item->instruktur->name : null,
+            'instruktur_name' => $item->instruktur->name ?? null,
         ];
     });
 
-        return response([
-            'data' => $result,
-            'message' => 'Data activities Founded.'
-        ], 200);
-    }
+    return response()->json([
+        'total' => $activities->total(),
+        'current_page' => $activities->currentPage(),
+        'last_page' => $activities->lastPage(),
+        'per_page' => $activities->perPage(),
+        'message' => 'Data activities fetched successfully.',
+        'data' => $result,
+    ]);
+}
 
     /**
      * Store a newly created resource in storage.
