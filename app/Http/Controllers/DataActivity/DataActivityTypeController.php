@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\DataActivityType;
 
+
+use App\Http\Controllers\Controller;
 use App\Models\DataActivityType;
 use Illuminate\Http\Request;
 

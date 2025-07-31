@@ -1,26 +1,28 @@
 <?php
 
 
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\UserApiController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DataActivityController;
+use App\Http\Controllers\DataActivity\DataActivityController;
 use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
-use App\Http\Controllers\DataActivityTypeController;
+use App\Http\Controllers\DataActivityType\DataActivityTypeController;
 
 
 
 Route::resource('data-activity-types', DataActivityTypeController::class);
 Route::resource('data-activities', DataActivityController::class);
 Route::resource('users', UserController::class);
-Route::post('roles', [RoleController::class, 'store']);
 
 Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
     ->name('data-activities.show');
+
+
+Route::post('roles', [RoleController::class, 'store']);
 
 Route::post('instruktur/login', [LoginInstrukturController::class, 'logininstruktur']);
 Route::post('instruktur/logout', [LoginInstrukturController::class, 'logout'])->middleware('auth:sanctum');
