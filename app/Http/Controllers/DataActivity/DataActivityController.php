@@ -15,9 +15,11 @@ class DataActivityController extends Controller
      */
     public function index(Request $request)
     {
-    $query = DataActivity::with('activityType', 'instruktur');
+    
+    $instruktur = auth('instruktur')->user();
+    $query = DataActivity::with('activityType', 'instruktur')
+    ->where('instruktur_id', $instruktur->id);
 
-    // SEARCH (search di nama aktivitas, instruktur, tipe) - Case insensitive
     if ($search = $request->input('search')) {
         $searchLower = strtolower($search);
         $query->where(function ($q) use ($searchLower) {
