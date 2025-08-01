@@ -12,14 +12,25 @@ use App\Http\Controllers\DataActivity\DataActivityTypeController;
 use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
 
+Route::get('{any}', function () {
+    return response()->json([], 204);
+})->where('any', '.*');
 
+Route::get('/debug-cors', function (\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::debug('DEBUG GET CORS HIT', [
+        'Origin' => $request->headers->get('Origin'),
+        'Headers' => $request->headers->all(),
+    ]);
+
+    return response()->json(['ok' => true]);
+});
 
 Route::resource('data-activity-types', DataActivityTypeController::class);
 Route::resource('data-activities', DataActivityController::class);
 Route::resource('users', UserController::class);
 
-Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
-    ->name('data-activities.show');
+// Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
+//     ->name('data-activities.show');
 
 
 Route::post('roles', [RoleController::class, 'store']);
