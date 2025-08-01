@@ -13,21 +13,56 @@ class UserApiController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $admins = Admin::all();
-        
-        if ($admins->isEmpty()) {
-            return response()->json([
-                'message' => 'Belum ada data admin',
-                'data' => []
-            ], 200);
+        $query = Admin::with('role');
+
+        // SEARCH
+        if ($search = $request->input('search')) {
+            $searchLower = strtolower($search);
+            $query->where(function ($q) use ($searchLower) {
+                $q->whereRaw("LOWER(name) like ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(email) like ?", ["%{$searchLower}%"])
+                  ->orWhereHas('role', function ($q2) use ($searchLower) {
+                      $q2->whereRaw("LOWER(name) like ?", ["%{$searchLower}%"]);
+                  });
+            });
         }
 
+        // SORT
+        $sortKey = $request->input('sortKey', 'name');
+        $sortOrder = $request->input('sortOrder', 'asc');
+        if ($sortKey === 'role_name') {
+            $query->leftJoin('roles', 'admins.role_id', '=', 'roles.id')
+                  ->orderBy('roles.name', $sortOrder)
+                  ->select('admins.*');
+        } else {
+            $query->orderBy($sortKey, $sortOrder);
+        }
+
+        // PAGINATION
+        $perPage = max(5, $request->input('perPage', 10));
+        $items = $query->paginate($perPage);
+
+        // Format response
+        $result = $items->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'email' => $item->email,
+                'role_id' => $item->role_id,
+                'role_name' => $item->role->name ?? null,
+            ];
+        });
+
         return response()->json([
-            'message' => 'Data admin berhasil diambil',
-            'data' => $admins
-        ], 200);
+            'total' => $items->total(),
+            'current_page' => $items->currentPage(),
+            'last_page' => $items->lastPage(),
+            'per_page' => $items->perPage(),
+            'message' => 'Admin list fetched successfully.',
+            'data' => $result,
+        ]);
     }
 
     /**
