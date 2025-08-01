@@ -10,15 +10,46 @@ use Illuminate\Support\Facades\Hash;
 
 class InstrukturManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $instrukturs = Instruktur::all();
+        $query = Instruktur::query();
 
-        if ($instrukturs->isEmpty()) {
-            return response()->json(['message' => 'No instructors found'], 404);
+        // SEARCH - Case insensitive search on instructor name and email
+        if ($search = $request->input('search')) {
+            $searchLower = strtolower($search);
+            $query->where(function ($q) use ($searchLower) {
+                $q->whereRaw("LOWER(name) like ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(email) like ?", ["%{$searchLower}%"]);
+            });
         }
 
-        return response()->json($instrukturs, 200);
+        // SORT (default: by name asc)
+        $sortKey = $request->input('sortKey', 'name');
+        $sortOrder = $request->input('sortOrder', 'asc');
+        $query->orderBy($sortKey, $sortOrder);
+
+        // PAGINATION
+        $perPage = $request->input('perPage', 10);
+        $instrukturs = $query->paginate($perPage);
+
+        // Format response
+        $result = $instrukturs->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'email' => $item->email,
+                'role_id' => $item->role_id,
+            ];
+        });
+
+        return response()->json([
+            'total' => $instrukturs->total(),
+            'current_page' => $instrukturs->currentPage(),
+            'last_page' => $instrukturs->lastPage(),
+            'per_page' => $instrukturs->perPage(),
+            'message' => 'Data instructors fetched successfully.',
+            'data' => $result,
+        ]);
     }
 
     public function show($id)
