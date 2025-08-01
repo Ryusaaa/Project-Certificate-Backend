@@ -15,9 +15,10 @@ class DataActivityController extends Controller
      */
     public function index(Request $request)
     {
+    
+    
     $query = DataActivity::with('activityType', 'instruktur');
 
-    // SEARCH (search di nama aktivitas, instruktur, tipe) - Case insensitive
     if ($search = $request->input('search')) {
         $searchLower = strtolower($search);
         $query->where(function ($q) use ($searchLower) {
@@ -39,10 +40,29 @@ class DataActivityController extends Controller
     // SORT (default: by activity_name asc)
     $sortKey = $request->input('sortKey', 'activity_name');
     $sortOrder = $request->input('sortOrder', 'asc');
-    $query->orderBy($sortKey, $sortOrder);
+    
+    // Validasi minimum pagination
+    $perPage = max(5, $request->input('perPage', 10));
+
+    // Sorting berdasarkan kolom relasi dan length
+    if ($sortKey === 'activity_type_name') {
+        $query->leftJoin('data_activity_types', 'data_activities.activity_type_id', '=', 'data_activity_types.id')
+              ->orderBy('data_activity_types.type_name', $sortOrder)
+              ->select('data_activities.*');
+    } 
+    elseif ($sortKey === 'instruktur_name') {
+        $query->leftJoin('instrukturs', 'data_activities.instruktur_id', '=', 'instrukturs.id')
+              ->orderBy('instrukturs.name', $sortOrder)
+              ->select('data_activities.*');
+    }
+    elseif ($sortKey === 'description_length') {
+        $query->orderByRaw('LENGTH(COALESCE(description, \'\')) ' . $sortOrder);
+    }
+    else {
+        $query->orderBy($sortKey, $sortOrder);
+    }
 
     // PAGINATION
-    $perPage = $request->input('perPage', 10);
     $activities = $query->paginate($perPage);
 
     // Format response
