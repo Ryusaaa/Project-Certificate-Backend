@@ -13,15 +13,18 @@ use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
 use Dflydev\DotAccessData\Data;
 
-Route::resource('data-activity-types', DataActivityTypeController::class);
-Route::resource('data-activities', DataActivityController::class);
-Route::resource('users', UserController::class);
 
 Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
     ->name('data-activities.show');
-
+Route::get('users/download-template', [UserController::class, 'downloadTemplate'])
+    ->name('users.downloadTemplate');    
 Route::post('users/import', [UserController::class, 'import'])
     ->name('users.import');
+
+
+Route::resource('data-activity-types', DataActivityTypeController::class);
+Route::resource('data-activities', DataActivityController::class);
+Route::resource('users', UserController::class);    
 
 
 Route::post('roles', [RoleController::class, 'store']);

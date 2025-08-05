@@ -18,6 +18,18 @@ class UserController extends Controller
      * Display a listing of the resource.
      */
 
+    public function downloadTemplate() {
+        $filePath = public_path('template/template_peserta.xlsx');
+        if (!file_exists($filePath)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Template file not found.'
+            ], 404);
+        }
+        return response()->download($filePath, 'template_peserta.xlsx');
+    }
+
+
 
         public function import(Request $request)
     {
