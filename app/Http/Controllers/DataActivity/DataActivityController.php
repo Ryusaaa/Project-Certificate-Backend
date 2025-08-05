@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\DataActivity;
 
-
 use App\Http\Controllers\Controller;
 use App\Models\DataActivity;
 use Illuminate\Http\Request;
 use App\Models\Instruktur;
+use App\Models\User;
 
 class DataActivityController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
     public function index(Request $request)
     {
     

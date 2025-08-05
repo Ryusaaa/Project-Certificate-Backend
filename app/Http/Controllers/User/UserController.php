@@ -4,15 +4,84 @@ namespace App\Http\Controllers\User;
 
 
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
+
+        public function import(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file_excel' => 'required|mimes:xlsx,xls|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file_excel');
+
+            $spreadsheet = IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $data = $sheet->toArray();
+
+            DB::beginTransaction();
+            $importedCount = 0;
+
+            foreach (array_slice($data, 1) as $row) {
+                if (array_filter($row)) {
+                    $pesertaData = [
+                        'name' => $row[0],
+                        'email' => $row[1],
+                        'no_hp' => $row[2],
+                        'asal_institusi' => $row[3],
+                        'password' => Hash::make($row[4]),
+                        'role_id' => 3
+                    ];
+
+                    $existingPeserta = User::where('email', $pesertaData['email'])->first();
+
+                    if (!$existingPeserta) {
+                        User::create($pesertaData);
+                        $importedCount++;
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data peserta berhasil diunggah dan disimpan.',
+                'imported_count' => $importedCount
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengunggah atau memproses file.',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function index(Request $request)
     {
         $query = User::with('role');
