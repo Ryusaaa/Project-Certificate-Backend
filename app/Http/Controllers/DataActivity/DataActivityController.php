@@ -98,6 +98,7 @@ class DataActivityController extends Controller
         $request->validate([
             'activity_name' => 'required|string|max:255',
             'date' => 'required|date|after_or_equal:today',
+            'time' => 'required|date_format:H:i', 
             'activity_type_id' => 'required|exists:data_activity_types,id',
             'description' => 'nullable|string',
             'instruktur_id' => 'required|exists:instrukturs,id',
@@ -114,6 +115,7 @@ class DataActivityController extends Controller
         $dataActivity = DataActivity::create([
             'activity_name' => $request->activity_name,
             'date' => $request->date,
+            'time' => $request->time,
             'activity_type_id' => $request->activity_type_id,
             'description' => $request->description,
             'instruktur_id' => $instruktur->id,
@@ -159,6 +161,7 @@ class DataActivityController extends Controller
         $request->validate([
             'activity_name' => 'required|string|max:255',
             'date' => 'required|date',
+            'time' => 'required|date_format:H:i', 
             'activity_type_id' => 'required|exists:data_activity_types,id',
             'description' => 'nullable|string',
             'instruktur_id' => 'required|exists:instrukturs,id', 
