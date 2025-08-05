@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('data_activity', function (Blueprint $table) {
-            $table->time('time')->nullable();
+            $table->time('time_start')->nullable();
+            $table->time('time_end')->nullable();
         });
     }
 
@@ -22,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('data_activity', function (Blueprint $table) {
-            $table->dropColumn('time');
+            $table->dropColumn('time_start');
+            $table->dropColumn('time_end');
         });
     }
 };

@@ -11,7 +11,8 @@ class DataActivity extends Model
     protected $fillable = [
         'activity_name',
         'date',
-        'time', 
+        'time_start', 
+        'time_end', 
         'activity_type_id',
         'description',
         'instruktur_id'
@@ -19,7 +20,8 @@ class DataActivity extends Model
 
     protected $casts = [
         'date' => 'datetime',
-        'time' => 'string'
+        'time_start' => 'string',
+        'time_end' => 'string'
     ];
 
     public function activityType()
