@@ -14,19 +14,21 @@ class DataActivityController extends Controller
      * Display a listing of the resource.
      */
 
-    public function uploadImage(Request $request)
-{
-    $request->validate([
-        'image' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048'
-    ]);
+    private function handleEmbeddedImages($description)
+    {
+        $pattern = '/<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"[^>]*>/i';
+        return preg_replace_callback($pattern, function ($matches) {
+            $ext = $matches[1];
+            $base64 = $matches[2];
+            $imageData = base64_decode($base64);
+            $filename = 'activity_images/' . uniqid() . '.' . $ext;
+            file_put_contents(public_path('storage/' . $filename), $imageData);
+            $url = asset('storage/' . $filename);
+            return '<img src="' . $url . '" />';
+        }, $description);
+    }
 
-    $path = $request->file('image')->store('activity_images', 'public');
-    $url = asset('storage/' . $path);
 
-    return response()->json([
-        'url' => $url
-    ]);
-}
 
     public function index(Request $request)
     {
@@ -126,13 +128,15 @@ class DataActivityController extends Controller
             ], 404);
         }
 
+        $description = $request->description ? $this->handleEmbeddedImages($request->description) : null;
+
         $dataActivity = DataActivity::create([
             'activity_name' => $request->activity_name,
             'date' => $request->date,
             'time_start' => $request->time_start,
             'time_end' => $request->time_end,
             'activity_type_id' => $request->activity_type_id,
-            'description' => $request->description,
+            'description' => $description,
             'instruktur_id' => $instruktur->id,
         ]);
 
@@ -183,7 +187,16 @@ class DataActivityController extends Controller
             'instruktur_id' => 'required|exists:instrukturs,id',
         ]);
 
-        $dataActivity->update($request->all());
+        $description = $request->description ? $this->handleEmbeddedImages($request->description) : null;
+
+        $dataActivity->update([
+            'activity_name' => $request->activity_name,
+            'date' => $request->date,
+            'time_start' => $request->time_start,
+            'time_end' => $request->time_end,
+            'activity_type_id' => $request->activity_type_id,
+            'description' => $description,
+        ]);
 
         return response([
             'data' => $dataActivity,
