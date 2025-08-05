@@ -14,6 +14,20 @@ class DataActivityController extends Controller
      * Display a listing of the resource.
      */
 
+    public function uploadImage(Request $request)
+{
+    $request->validate([
+        'image' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048'
+    ]);
+
+    $path = $request->file('image')->store('activity_images', 'public');
+    $url = asset('storage/' . $path);
+
+    return response()->json([
+        'url' => $url
+    ]);
+}
+
     public function index(Request $request)
     {
 

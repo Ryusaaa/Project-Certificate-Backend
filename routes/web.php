@@ -16,6 +16,8 @@ use Dflydev\DotAccessData\Data;
 
 Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
     ->name('data-activities.show');
+Route::post('/data-activities/upload-image', [DataActivityController::class, 'uploadImage'])
+    ->name('data-activities.uploadImage');
 Route::get('users/download-template', [UserController::class, 'downloadTemplate'])
     ->name('users.downloadTemplate');    
 Route::post('users/import', [UserController::class, 'import'])
