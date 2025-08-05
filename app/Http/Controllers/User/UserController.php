@@ -11,12 +11,28 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Throwable;
 
 class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
+     private function formatNomorHP($nomor)
+    {
+        if (empty($nomor)) {
+            return null;
+        }
+        $nomor = preg_replace('/[^0-9]/', '', $nomor);
+        if (substr($nomor, 0, 1) == '0') {
+            return '62' . substr($nomor, 1);
+        }
+        if (substr($nomor, 0, 2) == '62') {
+            return $nomor;
+        }
+        return $nomor;
+    }
 
     public function downloadTemplate() {
         $filePath = public_path('template/template_peserta.xlsx');
@@ -31,7 +47,7 @@ class UserController extends Controller
 
 
 
-        public function import(Request $request)
+    public function import(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'file_excel' => 'required|mimes:xlsx,xls|max:2048',
@@ -54,41 +70,71 @@ class UserController extends Controller
 
             DB::beginTransaction();
             $importedCount = 0;
+            $errors = [];
+            $rowNumber = 2; 
 
             foreach (array_slice($data, 1) as $row) {
-                if (array_filter($row)) {
-                    $pesertaData = [
-                        'name' => $row[0],
-                        'email' => $row[1],
-                        'no_hp' => $row[2],
-                        'asal_institusi' => $row[3],
-                        'password' => Hash::make($row[4]),
-                        'role_id' => 3
-                    ];
-
-                    $existingPeserta = User::where('email', $pesertaData['email'])->first();
-
-                    if (!$existingPeserta) {
-                        User::create($pesertaData);
-                        $importedCount++;
-                    }
+                $rowNumber++; 
+                if (!array_filter($row)) {
+                    continue;
                 }
+
+                $email = filter_var($row[1], FILTER_VALIDATE_EMAIL);
+                if (!$email) {
+                    $errors[] = "Baris {$rowNumber}: Format email '{$row[1]}' tidak valid.";
+                    continue; 
+                }
+                
+                $nomorHpFormatted = $this->formatNomorHP($row[2]);
+
+                $pesertaData = [
+                    'name'           => $row[0] ?? null,
+                    'email'          => $email,
+                    'no_hp'          => $nomorHpFormatted, 
+                    'asal_institusi' => $row[3] ?? null,
+                    'password'       => Hash::make($row[4] ?? 'password'), 
+                    'role_id'        => 3
+                ];
+
+                if (empty($pesertaData['name']) || empty($row[4])) {
+                    $errors[] = "Baris {$rowNumber}: Nama atau password tidak boleh kosong.";
+                    continue;
+                }
+
+                if (!preg_match('/^(62|08)[0-9]{7,13}$/', $row[2])) {
+                    $errors[] = "Baris {$rowNumber}: Nomor HP '{$row[2]}' harus diawali 62 atau 08 dan terdiri dari 8-15 digit angka.";
+                    continue;
+                }
+
+                $existingPeserta = User::where('email', $pesertaData['email'])->first();
+                if (!$existingPeserta) {
+                    User::create($pesertaData);
+                    $importedCount++;
+                }
+            }
+
+            if (!empty($errors)) {
+                DB::rollBack(); 
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Beberapa data gagal diimpor.',
+                    'errors' => $errors
+                ], 422);
             }
 
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Data peserta berhasil diunggah dan disimpan.',
-                'imported_count' => $importedCount
+                'message' => "Data berhasil diunggah. {$importedCount} data baru disimpan.",
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (Throwable $e) { 
             DB::rollBack();
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan saat mengunggah atau memproses file.',
+                'message' => 'Terjadi kesalahan internal saat memproses file.',
                 'details' => $e->getMessage()
             ], 500);
         }
@@ -130,6 +176,8 @@ class UserController extends Controller
             return [
                 'id' => $item->id,
                 'name' => $item->name,
+                'no_hp' => $item->no_hp,
+                'asal_institusi' => $item->asal_institusi,
                 'email' => $item->email,
                 'role_id' => $item->role_id,
                 'role_name' => $item->role->name ?? null,
@@ -154,7 +202,12 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'no_hp' => 'required|string|max:15',
+            'no_hp' => [
+                'required',
+                'string',
+                'max:15',
+                'regex:/^(62|08)[0-9]{7,13}$/'
+            ],
             'asal_institusi' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id', 
@@ -202,7 +255,12 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$id,
-            'no_hp' => 'required|string|max:15',
+            'no_hp' => [
+                'required',
+                'string',
+                'max:15',
+                'regex:/^(62|08)[0-9]{7,13}$/'
+            ],
             'asal_institusi' => 'required|string|max:255',
             'password' => 'nullable|string|min:8|confirmed',
         ]);
