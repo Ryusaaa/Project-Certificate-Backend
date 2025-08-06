@@ -11,6 +11,7 @@ use App\Http\Controllers\DataActivity\DataActivityController;
 use App\Http\Controllers\DataActivity\DataActivityTypeController;
 use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
+use Dflydev\DotAccessData\Data;
 use App\Http\Controllers\Sertifikat\SertifikatTemplateController;
 
 Route::get('/debug-cors', function (\Illuminate\Http\Request $request) {
@@ -26,14 +27,16 @@ Route::get('/debug-cors', function (\Illuminate\Http\Request $request) {
 Route::get('/phpinfo', function() {
     phpinfo();
 });
+Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
+    ->name('data-activities.show');
+Route::get('users/download-template', [UserController::class, 'downloadTemplate'])
+    ->name('users.downloadTemplate');    
+Route::post('data-activities/{id}/import', [UserController::class, 'import']);
 
 Route::resource('data-activity-types', DataActivityTypeController::class);
 
 Route::resource('data-activities', DataActivityController::class);
-Route::resource('users', UserController::class);
-
-// Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
-//     ->name('data-activities.show');
+Route::resource('users', UserController::class);    
 
 Route::post('roles', [RoleController::class, 'store']);
 
