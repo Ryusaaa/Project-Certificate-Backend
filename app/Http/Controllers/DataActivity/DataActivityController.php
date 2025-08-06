@@ -4,10 +4,8 @@ namespace App\Http\Controllers\DataActivity;
 
 use App\Http\Controllers\Controller;
 use App\Models\DataActivity;
-use App\Models\DataActivityType;
-use App\Models\Instruktur;
 use Illuminate\Http\Request;
-use App\Models\User; 
+use App\Models\User;
 
 class DataActivityController extends Controller
 {
@@ -15,6 +13,8 @@ class DataActivityController extends Controller
      * Helper function to handle Base64 encoded images embedded in a string.
      * It saves them as files and replaces the src attribute with the new URL.
      */
+
+
     private function handleEmbeddedImages($description)
     {
         $pattern = '/<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"[^>]*>/i';
@@ -59,12 +59,12 @@ class DataActivityController extends Controller
 
         if ($sortKey === 'activity_type_name') {
             $query->join('data_activity_types', 'data_activities.activity_type_id', '=', 'data_activity_types.id')
-                  ->orderBy('data_activity_types.type_name', $sortOrder)
-                  ->select('data_activities.*');
+                ->orderBy('data_activity_types.type_name', $sortOrder)
+                ->select('data_activities.*');
         } elseif ($sortKey === 'instruktur_name') {
             $query->join('instrukturs', 'data_activities.instruktur_id', '=', 'instrukturs.id')
-                  ->orderBy('instrukturs.name', $sortOrder)
-                  ->select('data_activities.*');
+                ->orderBy('instrukturs.name', $sortOrder)
+                ->select('data_activities.*');
         } elseif ($sortKey === 'description_length') {
             $query->orderByRaw('LENGTH(COALESCE(description, \'\')) ' . $sortOrder);
         } else {
@@ -139,7 +139,7 @@ class DataActivityController extends Controller
     public function show(string $id)
     {
         $dataActivity = DataActivity::with(['activityType', 'instruktur', 'peserta'])
-                                    ->find($id);
+            ->find($id);
 
         if (!$dataActivity) {
             return response()->json(['message' => 'Data kegiatan tidak ditemukan.'], 404);
@@ -155,7 +155,7 @@ class DataActivityController extends Controller
             'activity_type_name' => $dataActivity->activityType->type_name ?? null,
             'description' => $dataActivity->description,
             'instruktur_name' => $dataActivity->instruktur->name ?? null,
-            'peserta' => $dataActivity->peserta, 
+            'peserta' => $dataActivity->peserta,
         ];
 
         return response()->json([
@@ -184,7 +184,7 @@ class DataActivityController extends Controller
             'description' => 'nullable|string',
             'instruktur_id' => 'sometimes|required|exists:instrukturs,id',
         ]);
-        
+
         $payload = $request->all();
 
         if ($request->has('description')) {
