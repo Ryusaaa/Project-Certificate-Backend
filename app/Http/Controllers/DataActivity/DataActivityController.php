@@ -4,8 +4,6 @@ namespace App\Http\Controllers\DataActivity;
 
 use App\Http\Controllers\Controller;
 use App\Models\DataActivity;
-use App\Models\DataActivityType;
-use App\Models\Instruktur;
 use Illuminate\Http\Request;
 use App\Models\User;
 
@@ -16,33 +14,6 @@ class DataActivityController extends Controller
      * It saves them as files and replaces the src attribute with the new URL.
      */
 
-    public function inputUserDataActivity(Request $request, $id)
-    {
-        $dataActivity = DataActivity::findOrFail($id);
-        $user = User::findOrFail($request->user_id);
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'no_hp' => [
-                'required',
-                'string',
-                'max:15',
-                'regex:/^(62|08)[0-9]{7,13}$/'
-            ],
-            'asal_institusi' => 'required|string|max:255',
-            'password' => 'required|string|min:8|confirmed',
-            'role_id' => 'required|exists:roles,id',
-        ]);
-
-        $validated['password'] = bcrypt($validated['password']);
-        $user = User::create($validated);
-
-
-        return response()->json([
-            'message' => 'User successfully added to data activity.',
-            'data' => [$dataActivity, $user]
-        ], 200);
-    }
 
     private function handleEmbeddedImages($description)
     {

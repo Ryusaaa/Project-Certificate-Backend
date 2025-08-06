@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Http\Controllers\Controller;
+use App\Models\DataActivity;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -249,6 +250,34 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
+        public function inputUserDataActivity(Request $request, $id)
+    {
+        $dataActivity = DataActivity::findOrFail($id);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'no_hp' => [
+                'required',
+                'string',
+                'max:15',
+                'regex:/^(62|08)[0-9]{7,13}$/'
+            ],
+            'asal_institusi' => 'required|string|max:255',
+            'password' => 'required|string|min:8|confirmed',
+            'role_id' => 'required|exists:roles,id',
+        ]);
+
+        $validated['password'] = bcrypt($validated['password']);
+        $user = User::create($validated);
+
+        $dataActivity->peserta()->attach($user->id);
+
+        return response()->json([
+            'message' => 'User successfully added to data activity.',
+            'data' => [$dataActivity, $user]
+        ], 200);
+    }
+
     public function show(string $id)
     {
         $data = User::find($id);
