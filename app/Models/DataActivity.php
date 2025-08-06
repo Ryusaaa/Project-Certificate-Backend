@@ -50,7 +50,7 @@ class DataActivity extends Model
      * Mendefinisikan relasi ke peserta (Users).
      * Nama 'participants' lebih deskriptif daripada 'users' dalam konteks ini.
      */
-    public function participants()
+    public function peserta()
     {
         return $this->belongsToMany(User::class, 'data_activity_user', 'data_activity_id', 'user_id');
     }

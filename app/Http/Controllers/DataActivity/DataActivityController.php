@@ -7,7 +7,7 @@ use App\Models\DataActivity;
 use App\Models\DataActivityType;
 use App\Models\Instruktur;
 use Illuminate\Http\Request;
-use App\Models\User; // Pastikan model User di-import
+use App\Models\User; 
 
 class DataActivityController extends Controller
 {
@@ -138,9 +138,7 @@ class DataActivityController extends Controller
      */
     public function show(string $id)
     {
-        // Gunakan with() untuk memuat relasi dan withCount() untuk menghitung jumlah peserta
-        $dataActivity = DataActivity::with(['activityType', 'instruktur'])
-                                    ->withCount('participants') // Ini sekarang akan cocok dengan relasi di model
+        $dataActivity = DataActivity::with(['activityType', 'instruktur', 'peserta'])
                                     ->find($id);
 
         if (!$dataActivity) {
@@ -157,7 +155,7 @@ class DataActivityController extends Controller
             'activity_type_name' => $dataActivity->activityType->type_name ?? null,
             'description' => $dataActivity->description,
             'instruktur_name' => $dataActivity->instruktur->name ?? null,
-            'total_participants' => $dataActivity->participants_count, // Field ini berisi hasil hitungan
+            'peserta' => $dataActivity->peserta, 
         ];
 
         return response()->json([
