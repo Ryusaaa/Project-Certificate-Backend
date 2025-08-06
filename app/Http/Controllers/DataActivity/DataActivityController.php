@@ -5,10 +5,6 @@ namespace App\Http\Controllers\DataActivity;
 use App\Http\Controllers\Controller;
 use App\Models\DataActivity;
 use Illuminate\Http\Request;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-
 use App\Models\Instruktur;
 use App\Models\User;
 
@@ -17,69 +13,6 @@ class DataActivityController extends Controller
     /**
      * Display a listing of the resource.
      */
-
-    public function importPeserta(Request $request, $id)
-    {
-        $request->validate([
-            'file_excel' => 'required|mimes:xlsx,xls|max:2048',
-        ]);
-
-        try {
-            $file = $request->file('file_excel');
-            $spreadsheet = IOFactory::load($file->getPathname());
-            $sheet = $spreadsheet->getActiveSheet();
-            $data = $sheet->toArray();
-
-            DB::beginTransaction();
-            $importedCount = 0;
-            $errors = [];
-            $rowNumber = 2;
-
-            foreach ($data as $index => $row) {
-                if ($index === 0) continue;
-
-                $email = $row[1] ?? null;
-                if (!$email) {
-                    $errors[] = "Baris $rowNumber: Email kosong.";
-                    $rowNumber++;
-                    continue;
-                }
-
-                $exists = User::where('email', $email)->where('activity_id', $id)->exists();
-                if ($exists) {
-                    $errors[] = "Baris $rowNumber: Email $email sudah terdaftar di aktivitas ini.";
-                    $rowNumber++;
-                    continue;
-                }
-
-                User::create([
-                    'name'           => $row[0] ?? null,
-                    'email'          => $email,
-                    'no_hp'          => $row[2] ?? null,
-                    'asal_institusi' => $row[3] ?? null,
-                    'password'       => Hash::make($row[4] ?? 'password'),
-                    'role_id'        => 3, 
-                    'activity_id'    => $id,
-                ]);
-                $importedCount++;
-                $rowNumber++;
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'message' => "Berhasil mengimport $importedCount peserta.",
-                'errors' => $errors,
-            ]);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Terjadi kesalahan internal saat memproses file.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
 
     private function handleEmbeddedImages($description)
     {
@@ -99,6 +32,7 @@ class DataActivityController extends Controller
 
     public function index(Request $request)
     {
+
 
         $query = DataActivity::with('activityType', 'instruktur');
 
@@ -158,7 +92,6 @@ class DataActivityController extends Controller
                 'description' => $item->description,
                 'instruktur_id' => $item->instruktur_id,
                 'instruktur_name' => $item->instruktur->name ?? null,
-                'total_peserta' => $item->users()->count(),
             ];
         });
 
