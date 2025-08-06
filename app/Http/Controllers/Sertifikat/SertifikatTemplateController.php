@@ -267,6 +267,9 @@ class SertifikatTemplateController extends Controller
     private function processElements($elements)
     {
         return array_map(function($element) {
+            // Log incoming element for debugging
+            Log::info('Processing element:', $element);
+
             // Ensure coordinates are within bounds
             $element['x'] = max(0, min($element['x'], $this->pdfWidth));
             $element['y'] = max(0, min($element['y'], $this->pdfHeight));
@@ -275,6 +278,46 @@ class SertifikatTemplateController extends Controller
             unset($element['originalX'], $element['originalY']);
             unset($element['originalWidth'], $element['originalHeight']);
 
+            // Handle image elements
+            if ($element['type'] === 'image') {
+                // Try to get image URL from various possible fields
+                $imageUrl = null;
+                foreach (['imageUrl', 'url', 'image', 'src'] as $field) {
+                    if (!empty($element[$field])) {
+                        $imageUrl = $element[$field];
+                        break;
+                    }
+                }
+                
+                if ($imageUrl) {
+                    // Clean the URL to path if it's a storage URL
+                    if (preg_match('#/storage/certificates/([^/]+)$#', $imageUrl, $matches)) {
+                        $imagePath = 'certificates/' . $matches[1];
+                        Log::info('Image path resolved:', ['path' => $imagePath]);
+                        
+                        // Verify image exists
+                        if (Storage::disk('public')->exists($imagePath)) {
+                            // Keep the full URL for the template to use
+                            $element['image_url'] = $imageUrl;
+                            $element['image'] = $imageUrl;
+                            // Store the path for future reference
+                            $element['image_path'] = $imagePath;
+                            Log::info('Image data prepared:', [
+                                'url' => $imageUrl,
+                                'path' => $imagePath
+                            ]);
+                        } else {
+                            Log::error('Image not found:', ['path' => $imagePath]);
+                        }
+                    } else {
+                        Log::warning('Image URL is not a storage URL:', ['url' => $imageUrl]);
+                    }
+                } else {
+                    Log::warning('No image URL found in element');
+                }
+            }
+
+            Log::info('Processed element:', $element);
             return $element;
         }, $elements);
     }

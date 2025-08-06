@@ -54,21 +54,22 @@
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             height: calc(100vh - 40px);
-            overflow: auto;
+            overflow-y: auto;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
+            align-items: center;
         }
 
         .preview-container {
-            flex: 1;
+            flex: none;
             background-color: #fff;
             position: relative;
             width: 842px;
             height: 595px;
-            margin: 0 auto;
+            margin: 20px auto;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
             overflow: hidden;
-            border-radius: 8px;
             border: 1px solid var(--border-color);
             background-image: linear-gradient(45deg, #f1f1f1 25%, transparent 25%),
                             linear-gradient(-45deg, #f1f1f1 25%, transparent 25%),
@@ -82,7 +83,7 @@
         }
         
         .preview-container.has-bg {
-            background-size: contain;
+            background-size: 100% 100%;
             background-position: center;
             background-repeat: no-repeat;
         }
@@ -164,6 +165,7 @@
             color: #666;
         }
 
+    /* Penyesuaian umum untuk elemen */
         .element {
             position: absolute;
             cursor: move;
@@ -171,17 +173,44 @@
             border: 1px solid transparent;
             min-width: 100px;
             white-space: nowrap;
+            font-size: inherit;
+            line-height: 1.2;
+            transform-origin: left top;
+            display: inline-block;
         }
-        
-        .element[data-text-align="center"] {
-            transform: translateX(-50%);
-            text-align: center;
-        }
-        
-        .element[data-text-align="right"] {
-            transform: translateX(-100%);
-            text-align: right;
-        }
+
+/* Penyesuaian untuk elemen dengan text-align center */
+    .element[data-text-align="center"] {
+        transform: translateX(-50%);
+        text-align: center;
+}
+
+/* Penyesuaian untuk elemen dengan text-align right */
+    .element[data-text-align="right"] {
+        transform: translateX(-100%);
+        text-align: right;
+}
+
+/* Penyesuaian untuk gambar di dalam elemen */
+    .element img {
+        display: block;
+        position: relative;
+        margin: 0;
+        padding: 0;
+}/* Penyesuaian khusus untuk editor */
+    .editor .element {
+        /* Penyesuaian posisi */
+        transform: translateY(50%); /* Selaraskan dengan template */
+    
+        /* Penyesuaian padding/margin */
+        padding: 0;
+        margin: 0;
+}
+
+/* Penyesuaian untuk elemen tertentu */
+    .editor .element[data-name="nama"] {
+        transform: translate(-30px, 15px); /* Contoh penyesuaian untuk elemen nama */
+}
 
         .element:hover {
             border: 1px dashed #3498db;
@@ -266,10 +295,6 @@
 
         button.save-btn {
             background-color: var(--success-color);
-        }
-
-        button.preview-btn {
-            background-color: var(--warning-color);
         }
 
         .notification {
@@ -411,8 +436,26 @@
 
             <div id="imageOptions" style="display: none;">
                 <div class="form-group">
-                    <label for="imageUrl">URL Gambar</label>
-                    <input type="text" id="imageUrl" placeholder="Masukkan URL gambar">
+                    <label for="imageFile">Upload Gambar</label>
+                    <div class="file-input-wrapper" style="border: 2px dashed var(--border-color); padding: 20px; border-radius: 8px; text-align: center; background: #f8f9fa;">
+                        <div class="file-input-container" style="margin-bottom: 10px;">
+                            <label for="imageFile" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 10px 20px; background-color: var(--primary-color); color: white; border-radius: 5px;">
+                                <span style="font-size: 24px;">🖼️</span>
+                                <span>Pilih Gambar</span>
+                            </label>
+                            <input type="file" 
+                                   id="imageFile" 
+                                   accept="image/jpeg,image/png,image/gif" 
+                                   onchange="handleImageSelect(event)" 
+                                   style="display: none;">
+                        </div>
+                        <div class="image-preview" style="margin: 10px 0; display: none;">
+                            <img id="imagePreview" style="max-width: 200px; max-height: 100px; object-fit: contain;">
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                            Format: JPG, PNG, atau GIF (Maks. 2MB)
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -444,7 +487,6 @@
             </div>
             <div class="button-group">
                 <button onclick="saveTemplate()" class="save-btn">Simpan Template</button>
-                <button onclick="generatePDF()" class="preview-btn">Preview PDF</button>
             </div>
         </div>
     </div>
@@ -532,6 +574,72 @@
             };
 
             img.src = URL.createObjectURL(file);
+        }
+
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('background_image', file);
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+            const response = await fetch('/sertifikat-templates/upload-image', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.message || 'Upload gagal');
+            }
+
+            const result = await response.json();
+            return result.url;
+        }
+
+        async function handleImageSelect(event) {
+            try {
+                const file = event.target.files[0];
+                const preview = document.getElementById('imagePreview');
+                const previewContainer = preview.parentElement;
+
+                if (!file) {
+                    previewContainer.style.display = 'none';
+                    return;
+                }
+
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    showNotification('Format file harus JPG, PNG, atau GIF', 'error');
+                    event.target.value = '';
+                    previewContainer.style.display = 'none';
+                    return;
+                }
+
+                // Validate file size (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    showNotification('Ukuran file maksimal 2MB', 'error');
+                    event.target.value = '';
+                    previewContainer.style.display = 'none';
+                    return;
+                }
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+
+                // Upload image
+                const imageUrl = await uploadImage(file);
+                preview.dataset.uploadedUrl = imageUrl;
+                showNotification('Gambar berhasil diupload');
+
+            } catch (error) {
+                console.error('Image upload error:', error);
+                showNotification(error.message || 'Gagal mengupload gambar', 'error');
+            }
         }
 
         async function handleUploadBackground() {
@@ -670,21 +778,33 @@
                 element.textAlign = document.getElementById('textAlign').value;
                 element.placeholderType = placeholderType;
             } else {
-                const imageUrl = document.getElementById('imageUrl').value;
-                if (!imageUrl) {
-                    showNotification('Harap masukkan URL gambar', 'error');
+                const imagePreview = document.getElementById('imagePreview');
+                const uploadedUrl = imagePreview.dataset.uploadedUrl;
+                if (!uploadedUrl) {
+                    showNotification('Harap upload gambar terlebih dahulu', 'error');
                     return;
                 }
 
-                element.imageUrl = imageUrl;
+                element.imageUrl = uploadedUrl;
                 element.width = parseInt(document.getElementById('imageWidth').value) || 100;
                 element.height = parseInt(document.getElementById('imageHeight').value) || 100;
+                
+                // Debug image data
+                console.log('Adding image element:', {
+                    url: uploadedUrl,
+                    width: element.width,
+                    height: element.height
+                });
             }
 
             elements.push(element);
             updatePreview();
-            document.getElementById('elementText').value = '';
-            document.getElementById('imageUrl').value = '';
+            
+            // Reset form fields based on element type
+            if (type === 'text') {
+                document.getElementById('elementText').value = '';
+            }
+            // Remove imageUrl reset since the element doesn't exist
             showNotification('Elemen berhasil ditambahkan');
         }
 
@@ -701,14 +821,16 @@
                 preview.appendChild(message);
             }
 
-            // Create a container for elements that maintains aspect ratio
+            // Create a container for elements that matches PDF dimensions exactly
             const elementContainer = document.createElement('div');
             elementContainer.style.cssText = `
                 position: absolute;
                 width: 842px;
                 height: 595px;
-                transform-origin: center;
+                transform-origin: top left;
                 transform: scale(${preview.offsetWidth / 842});
+                left: 0;
+                top: 0;
             `;
             preview.appendChild(elementContainer);
 
@@ -737,6 +859,11 @@
                     img.src = element.imageUrl;
                     img.style.width = element.width + 'px';
                     img.style.height = element.height + 'px';
+                    img.style.margin = '0';
+                    img.style.padding = '0';
+                    img.style.display = 'block';
+                    div.style.width = element.width + 'px';
+                    div.style.height = element.height + 'px';
                     div.appendChild(img);
                 }
 
@@ -764,19 +891,27 @@
             const preview = document.getElementById('certificate-preview');
             const rect = preview.getBoundingClientRect();
             const textAlign = draggedElement.dataset.textAlign;
+            const isImage = draggedElement.querySelector('img') !== null;
 
             let x = (e.clientX - rect.left - offsetX);
             let y = (e.clientY - rect.top - offsetY);
             
-            // Adjust x position based on text alignment
-            if (textAlign === 'center') {
-                x += draggedElement.offsetWidth / 2;
-            } else if (textAlign === 'right') {
-                x += draggedElement.offsetWidth;
+            // Adjust position based on element type and text alignment
+            if (!isImage) {
+                // Text element adjustments
+                if (textAlign === 'center') {
+                    x += draggedElement.offsetWidth / 2;
+                    y += draggedElement.offsetHeight / 2;
+                } else if (textAlign === 'right') {
+                    x += draggedElement.offsetWidth;
+                    y += draggedElement.offsetHeight / 2;
+                } else {
+                    y += draggedElement.offsetHeight / 2;
+                }
             }
             
             x = Math.max(0, Math.min(x, 842 - (textAlign === 'left' ? draggedElement.offsetWidth : 0)));
-            y = Math.max(0, Math.min(y, 595 - draggedElement.offsetHeight));
+            y = Math.max(0, Math.min(y, 595));
             
             draggedElement.style.left = x + 'px';
             draggedElement.style.top = y + 'px';
@@ -848,9 +983,18 @@
                 document.getElementById('fontFamily').value = element.fontFamily;
                 document.getElementById('textAlign').value = element.textAlign;
             } else {
-                document.getElementById('imageUrl').value = element.imageUrl;
+                // Update width and height for image
                 document.getElementById('imageWidth').value = element.width;
                 document.getElementById('imageHeight').value = element.height;
+                
+                // Show image preview if exists
+                const preview = document.getElementById('imagePreview');
+                const previewContainer = preview.parentElement;
+                if (element.imageUrl) {
+                    preview.src = element.imageUrl;
+                    preview.dataset.uploadedUrl = element.imageUrl;
+                    previewContainer.style.display = 'block';
+                }
             }
 
             elements.splice(index, 1);
@@ -923,76 +1067,7 @@
             }
         }
 
-        async function generatePDF() {
-            try {
-                const preview = document.getElementById('certificate-preview');
-                const templateName = document.getElementById('templateName').value;
-                if (!templateName) {
-                    showNotification('Harap masukkan nama template', 'error');
-                    return;
-                }
-                if (!preview.classList.contains('has-bg')) {
-                    showNotification('Harap upload background terlebih dahulu', 'error');
-                    return;
-                }
-                if (elements.length === 0) {
-                    showNotification('Harap tambahkan minimal satu elemen', 'error');
-                    return;
-                }
-                showNotification('Membuat preview PDF...');
 
-                // Get background image URL from preview
-                const backgroundImage = preview.dataset.backgroundImage;
-
-                const data = {
-                    name: templateName,
-                    background_image: backgroundImage,
-                    elements: elements.map(el => ({
-                        type: el.type,
-                        x: el.x,
-                        y: el.y,
-                        ...(el.type === 'text' ? {
-                            text: el.text,
-                            fontSize: el.fontSize,
-                            fontFamily: el.fontFamily,
-                            textAlign: el.textAlign,
-                            placeholderType: el.placeholderType
-                        } : {
-                            imageUrl: el.imageUrl,
-                            width: el.width,
-                            height: el.height
-                        })
-                    })),
-                    _token: document.querySelector('meta[name="csrf-token"]').content
-                };
-
-                const response = await fetch('/sertifikat-templates/generate-pdf', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Gagal membuat preview PDF');
-                }
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `sertifikat-${templateName}-preview.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showNotification('Preview PDF berhasil dibuat');
-            } catch (error) {
-                console.error('Generate PDF error:', error);
-                showNotification(error.message || 'Gagal membuat preview PDF', 'error');
-            }
-        }
     </script>
 </body>
 </html>

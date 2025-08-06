@@ -124,8 +124,16 @@
                         @php
                             // Use coordinates directly - they are already transformed to PDF points
                             $x = $element['x'];
-                            $y = $element['y'];
                             $fontSize = $element['fontSize'] ?? 12;
+                            // Tambahkan offset berbeda untuk teks kustom dan placeholder
+                            $y = $element['y'];
+                            if ($element['type'] === 'text') {
+                                if (isset($element['placeholderType']) && $element['placeholderType'] !== 'custom') {
+                                    $y += $fontSize / 4; // offset yang lebih kecil untuk placeholder
+                                } else {
+                                    $y += $fontSize / 3; // offset yang lebih besar untuk teks kustom
+                                }
+                            }
                             $elementWidth = $element['width'] ?? null;
                             $elementHeight = $element['height'] ?? null;
                             
@@ -176,13 +184,41 @@
                                 ">
                                     {!! $element['text'] ?? '' !!}
                                 </p>
-                            @elseif($element['type'] === 'image' && isset($element['image_url']))
-                                <img src="{{ $element['image_url'] }}" 
-                                    style="
-                                        @if(isset($element['width'])) width: {{ $element['width'] }}pt; @endif
-                                        @if(isset($element['height'])) height: {{ $element['height'] }}pt; @endif
-                                        object-fit: contain;
-                                    ">
+                            @elseif($element['type'] === 'image')
+                                @php
+                                    \Log::info('Processing image element:', $element);
+                                    $imageUrl = $element['image_url'] ?? $element['imageUrl'] ?? $element['url'] ?? $element['image'] ?? null;
+                                    \Log::info('Image URL resolved to:', ['url' => $imageUrl]);
+                                    
+                                    // Convert image URL to base64 like we do for background
+                                    $imageSrc = $imageUrl;
+                                    if ($imageUrl && str_starts_with($imageUrl, '/storage/')) {
+                                        $imagePath = storage_path('app/public/' . substr($imageUrl, 8));
+                                        \Log::info('Resolving image path:', ['path' => $imagePath]);
+                                        
+                                        if (file_exists($imagePath)) {
+                                            $imageData = base64_encode(file_get_contents($imagePath));
+                                            $imageSrc = 'data:image/' . pathinfo($imagePath, PATHINFO_EXTENSION) . ';base64,' . $imageData;
+                                            \Log::info('Image successfully encoded');
+                                        } else {
+                                            \Log::error('Image file not found:', ['path' => $imagePath]);
+                                        }
+                                    }
+                                @endphp
+                                @if($imageSrc)
+                                    <img src="{{ $imageSrc }}" 
+                                        style="
+                                            @if(isset($element['width'])) width: {{ $element['width'] }}pt; @endif
+                                            @if(isset($element['height'])) height: {{ $element['height'] }}pt; @endif
+                                            object-fit: contain;
+                                            margin: 0;
+                                            padding: 0;
+                                            display: block;
+                                        ">
+                                @else
+                                    <!-- Log warning if no image URL found -->
+                                    @php \Log::warning('No image URL found in element:', $element); @endphp
+                                @endif
                             @endif
                         </div>
                     @endif
