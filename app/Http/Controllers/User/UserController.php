@@ -20,7 +20,7 @@ class UserController extends Controller
      */
 
     // Format nomor HP untuk menyimpan ke database
-     private function formatNomorHP($nomor)
+    private function formatNomorHP($nomor)
     {
         if (empty($nomor)) {
             return null;
@@ -36,7 +36,8 @@ class UserController extends Controller
     }
 
     // Download template Excel untuk import peserta
-    public function downloadTemplate() {
+    public function downloadTemplate()
+    {
         $filePath = public_path('template/template_peserta.xlsx');
         if (!file_exists($filePath)) {
             return response()->json([
@@ -73,10 +74,10 @@ class UserController extends Controller
             DB::beginTransaction();
             $importedCount = 0;
             $errors = [];
-            $rowNumber = 2; 
+            $rowNumber = 2;
 
             foreach (array_slice($data, 1) as $row) {
-                $rowNumber++; 
+                $rowNumber++;
                 if (!array_filter($row)) {
                     continue;
                 }
@@ -84,18 +85,20 @@ class UserController extends Controller
                 $email = filter_var($row[1], FILTER_VALIDATE_EMAIL);
                 if (!$email) {
                     $errors[] = "Baris {$rowNumber}: Format email '{$row[1]}' tidak valid.";
-                    continue; 
+                    continue;
                 }
-                
+
                 $nomorHpFormatted = $this->formatNomorHP($row[2]);
+                $activityId = $request->input('activity_id');
 
                 $pesertaData = [
                     'name'           => $row[0] ?? null,
                     'email'          => $email,
-                    'no_hp'          => $nomorHpFormatted, 
+                    'no_hp'          => $nomorHpFormatted,
                     'asal_institusi' => $row[3] ?? null,
-                    'password'       => Hash::make($row[4] ?? 'password'), 
-                    'role_id'        => 3
+                    'password'       => Hash::make($row[4] ?? 'password'),
+                    'role_id'        => 3,
+                    'activity_id'    => $activityId,
                 ];
 
                 // Validasi nama dan password
@@ -112,7 +115,7 @@ class UserController extends Controller
 
                 // Validasi dan proses peserta
                 $existingUser = User::where('email', $pesertaData['email'])->first();
-                
+
                 if ($existingUser) {
                     // Jika user sudah ada, cek apakah sudah terdaftar di activity ini
                     if (!$existingUser->daftarActivity()->where('data_activity_id', $id)->exists()) {
@@ -130,7 +133,7 @@ class UserController extends Controller
             }
 
             if (!empty($errors)) {
-                DB::rollBack(); 
+                DB::rollBack();
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Beberapa data gagal diimpor.',
@@ -144,8 +147,7 @@ class UserController extends Controller
                 'status' => 'success',
                 'message' => "Berhasil menambahkan {$importedCount} peserta ke kegiatan.",
             ], 200);
-
-        } catch (Throwable $e) { 
+        } catch (Throwable $e) {
             DB::rollBack();
 
             return response()->json([
@@ -165,10 +167,10 @@ class UserController extends Controller
             $searchLower = strtolower($search);
             $query->where(function ($q) use ($searchLower) {
                 $q->whereRaw("LOWER(name) like ?", ["%{$searchLower}%"])
-                  ->orWhereRaw("LOWER(email) like ?", ["%{$searchLower}%"])
-                  ->orWhereHas('role', function ($q2) use ($searchLower) {
-                      $q2->whereRaw("LOWER(name) like ?", ["%{$searchLower}%"]);
-                  });
+                    ->orWhereRaw("LOWER(email) like ?", ["%{$searchLower}%"])
+                    ->orWhereHas('role', function ($q2) use ($searchLower) {
+                        $q2->whereRaw("LOWER(name) like ?", ["%{$searchLower}%"]);
+                    });
             });
         }
 
@@ -177,8 +179,8 @@ class UserController extends Controller
         $sortOrder = $request->input('sortOrder', 'asc');
         if ($sortKey === 'role_name') {
             $query->leftJoin('roles', 'users.role_id', '=', 'roles.id')
-                  ->orderBy('roles.name', $sortOrder)
-                  ->select('users.*');
+                ->orderBy('roles.name', $sortOrder)
+                ->select('users.*');
         } else {
             $query->orderBy($sortKey, $sortOrder);
         }
@@ -197,7 +199,7 @@ class UserController extends Controller
                 'email' => $item->email,
                 'role_id' => $item->role_id,
                 'role_name' => $item->role->name ?? null,
-                'activities' => $item->daftarActivity->map(function($activity) {
+                'activities' => $item->daftarActivity->map(function ($activity) {
                     return [
                         'id' => $activity->id,
                         'activity_name' => $activity->activity_name
@@ -232,7 +234,7 @@ class UserController extends Controller
             ],
             'asal_institusi' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
-            'role_id' => 'required|exists:roles,id', 
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         $validated['password'] = bcrypt($validated['password']);
@@ -276,7 +278,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,'.$id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
             'no_hp' => [
                 'required',
                 'string',
@@ -319,6 +321,4 @@ class UserController extends Controller
             'data' => $data
         ], 200);
     }
-
-   
 }
