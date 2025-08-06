@@ -33,7 +33,6 @@ class DataActivityController extends Controller
     public function index(Request $request)
     {
 
-
         $query = DataActivity::with('activityType', 'instruktur');
 
         if ($search = $request->input('search')) {
@@ -92,6 +91,7 @@ class DataActivityController extends Controller
                 'description' => $item->description,
                 'instruktur_id' => $item->instruktur_id,
                 'instruktur_name' => $item->instruktur->name ?? null,
+                'total_peserta' => $item->users()->count(),
             ];
         });
 

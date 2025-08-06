@@ -38,6 +38,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = ['data_activity'];
     /**
      * Get the attributes that should be cast.
      *
@@ -51,8 +52,21 @@ class User extends Authenticatable
         ];
     }
 
+
+    public function getDataActivityAttribute()
+    {
+        return $this->daftarActivity()->get();
+    }
+
      public function role() 
     {
         return $this->belongsTo(Role::class, 'role_id');  
     }
+
+    public function daftarActivity()
+    {
+        return $this->belongsToMany(DataActivity::class, 'data_activity_user', 'user_id', 'data_activity_id')
+        ->select(['data_activity.id', 'data_activity.activity_name']);
+    }
+
 }

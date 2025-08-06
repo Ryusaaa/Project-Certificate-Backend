@@ -19,6 +19,7 @@ class UserController extends Controller
      * Display a listing of the resource.
      */
 
+    // Format nomor HP untuk menyimpan ke database
      private function formatNomorHP($nomor)
     {
         if (empty($nomor)) {
@@ -34,6 +35,7 @@ class UserController extends Controller
         return $nomor;
     }
 
+    // Download template Excel untuk import peserta
     public function downloadTemplate() {
         $filePath = public_path('template/template_peserta.xlsx');
         if (!file_exists($filePath)) {
@@ -46,8 +48,8 @@ class UserController extends Controller
     }
 
 
-
-    public function import(Request $request)
+    // Import Users dari file Excel
+    public function import(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
             'file_excel' => 'required|mimes:xlsx,xls|max:2048',
@@ -96,19 +98,33 @@ class UserController extends Controller
                     'role_id'        => 3
                 ];
 
+                // Validasi nama dan password
                 if (empty($pesertaData['name']) || empty($row[4])) {
                     $errors[] = "Baris {$rowNumber}: Nama atau password tidak boleh kosong.";
                     continue;
                 }
 
+                // Validasi nomor HP
                 if (!preg_match('/^(62|08)[0-9]{7,13}$/', $row[2])) {
                     $errors[] = "Baris {$rowNumber}: Nomor HP '{$row[2]}' harus diawali 62 atau 08 dan terdiri dari 8-15 digit angka.";
                     continue;
                 }
 
-                $existingPeserta = User::where('email', $pesertaData['email'])->first();
-                if (!$existingPeserta) {
-                    User::create($pesertaData);
+                // Validasi dan proses peserta
+                $existingUser = User::where('email', $pesertaData['email'])->first();
+                
+                if ($existingUser) {
+                    // Jika user sudah ada, cek apakah sudah terdaftar di activity ini
+                    if (!$existingUser->daftarActivity()->where('data_activity_id', $id)->exists()) {
+                        // Tambahkan ke activity jika belum terdaftar
+                        $existingUser->daftarActivity()->attach($id);
+                        $importedCount++;
+                    }
+                } else {
+                    // Buat user baru
+                    $newUser = User::create($pesertaData);
+                    // Hubungkan dengan activity
+                    $newUser->daftarActivity()->attach($id);
                     $importedCount++;
                 }
             }
@@ -126,7 +142,7 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => "Data berhasil diunggah. {$importedCount} data baru disimpan.",
+                'message' => "Berhasil menambahkan {$importedCount} peserta ke kegiatan.",
             ], 200);
 
         } catch (Throwable $e) { 
@@ -142,7 +158,7 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::with('role');
+        $query = User::with(['role', 'daftarActivity']);
 
         // SEARCH
         if ($search = $request->input('search')) {
@@ -181,6 +197,12 @@ class UserController extends Controller
                 'email' => $item->email,
                 'role_id' => $item->role_id,
                 'role_name' => $item->role->name ?? null,
+                'activities' => $item->daftarActivity->map(function($activity) {
+                    return [
+                        'id' => $activity->id,
+                        'activity_name' => $activity->activity_name
+                    ];
+                })
             ];
         });
 

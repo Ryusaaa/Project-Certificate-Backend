@@ -33,4 +33,9 @@ class DataActivity extends Model
     {
         return $this->belongsTo(Instruktur::class, 'instruktur_id');
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'data_activity_user');
+    }
 }

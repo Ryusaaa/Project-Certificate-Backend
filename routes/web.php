@@ -18,8 +18,7 @@ Route::get('/data-activities/{id}', [DataActivityController::class, 'show'])
     ->name('data-activities.show');
 Route::get('users/download-template', [UserController::class, 'downloadTemplate'])
     ->name('users.downloadTemplate');    
-Route::post('users/import', [UserController::class, 'import'])
-    ->name('users.import');
+Route::post('data-activities/{id}/import', [UserController::class, 'import']);
 
 
 Route::resource('data-activity-types', DataActivityTypeController::class);

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\DataActivity;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -19,9 +20,20 @@ class DatabaseSeeder extends Seeder
         $this->call(InstrukturSeeder::class);
         $this->call(Admin::class);
 
-        User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'Test User',
+            'no_hp' => '081234567890',
+            'asal_institusi' => 'PT. Example',
             'email' => 'test@example.com',
+            'role_id' => 3,
         ]);
+
+        $activity = DataActivity::create([
+            'activity_name' => 'Lomba Nasional',
+            'activity_type_id' => 1, // Make sure this ID exists
+            'description' => 'Description of the activity'
+        ]);
+
+        $user->daftarActivity()->attach($activity->id);
     }
 }
