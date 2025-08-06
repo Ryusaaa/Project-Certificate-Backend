@@ -20,11 +20,9 @@ Route::get('users/download-template', [UserController::class, 'downloadTemplate'
     ->name('users.downloadTemplate');    
 Route::post('data-activities/{id}/import', [UserController::class, 'import']);
 
-
 Route::resource('data-activity-types', DataActivityTypeController::class);
 Route::resource('data-activities', DataActivityController::class);
 Route::resource('users', UserController::class);    
-
 
 Route::post('roles', [RoleController::class, 'store']);
 

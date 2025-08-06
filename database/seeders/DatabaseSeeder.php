@@ -28,12 +28,6 @@ class DatabaseSeeder extends Seeder
             'role_id' => 3,
         ]);
 
-        $activity = DataActivity::create([
-            'activity_name' => 'Lomba Nasional',
-            'activity_type_id' => 1, // Make sure this ID exists
-            'description' => 'Description of the activity'
-        ]);
 
-        $user->daftarActivity()->attach($activity->id);
     }
 }
