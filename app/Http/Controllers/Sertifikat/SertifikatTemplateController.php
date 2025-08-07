@@ -218,7 +218,13 @@ class SertifikatTemplateController extends Controller
             ]);
 
             // Get template
-            $template = Sertifikat::findOrFail($id);
+            $template = Sertifikat::find($id);
+            if (!$template) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Template sertifikat tidak ditemukan'
+                ], 404);
+            }
             
             // Format date
             setlocale(LC_TIME, 'id_ID');
@@ -330,5 +336,79 @@ class SertifikatTemplateController extends Controller
             }
             return $element;
         }, $elements);
+    }
+
+    public function previewPDF(Request $request, $id)
+    {
+        try {
+            // Validate request
+            $validated = $request->validate([
+                'recipient_name' => 'required|string',
+                'certificate_number' => 'required|string',
+                'date' => 'required|date'
+            ]);
+
+            // Get template
+            $template = Sertifikat::find($id);
+            if (!$template) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Template sertifikat tidak ditemukan'
+                ], 404);
+            }
+            
+            // Format date
+            setlocale(LC_TIME, 'id_ID');
+            Carbon::setLocale('id');
+            $dateText = Carbon::parse($validated['date'])->translatedFormat('d F Y');
+
+            // Process template elements
+            $elements = $this->prepareElements($template->elements, [
+                '{NAMA}' => $validated['recipient_name'],
+                '{NOMOR}' => $validated['certificate_number'],
+                '{TANGGAL}' => $dateText
+            ]);
+
+            // Prepare PDF data
+            $data = [
+                'template' => $template,
+                'elements' => $elements,
+                'background_image' => Storage::disk('public')->path($template->background_image),
+                'pageWidth' => $this->pdfWidth,
+                'pageHeight' => $this->pdfHeight
+            ];
+
+            // Generate PDF
+            $pdf = PDF::loadView('sertifikat.template', $data)
+                     ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
+
+            // Generate filename
+            $filename = sprintf(
+                'preview_sertifikat_%s_%s_%s.pdf',
+                Str::slug($validated['recipient_name']),
+                Str::slug($validated['certificate_number']),
+                now()->format('Ymd_His')
+            );
+
+            // Save to storage
+            $pdfPath = 'certificates/previews/' . $filename;
+            Storage::disk('public')->put($pdfPath, $pdf->output());
+
+            // Generate public URL for the PDF
+            $url = '/storage/' . $pdfPath;
+
+            return response()->json([
+                'status' => 'success',
+                'url' => $url,
+                'message' => 'Preview PDF generated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating preview PDF: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

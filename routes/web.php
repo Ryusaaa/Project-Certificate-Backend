@@ -58,6 +58,7 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::get('/editor', function() {
         return view('sertifikat.editor');
     });
+    Route::post('/{id}/preview', [SertifikatTemplateController::class, 'previewPDF']);
     Route::post('/upload-image', [SertifikatTemplateController::class, 'uploadImage']);
     Route::post('/', [SertifikatTemplateController::class, 'store']);
     Route::get('/{id}', [SertifikatTemplateController::class, 'show']);
