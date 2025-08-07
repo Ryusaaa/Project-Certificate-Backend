@@ -23,7 +23,6 @@ class DataActivityController extends Controller
             $base64 = $matches[2];
             $imageData = base64_decode($base64);
             $filename = 'activity_images/' . uniqid() . '.' . $ext;
-            // Pastikan direktori ada dan dapat ditulis
             file_put_contents(public_path('storage/' . $filename), $imageData);
             $url = asset('storage/' . $filename);
             return '<img src="' . $url . '" />';
