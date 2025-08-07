@@ -86,6 +86,7 @@ class DataActivityController extends Controller
                 'description' => $item->description,
                 'instruktur_id' => $item->instruktur_id,
                 'instruktur_name' => $item->instruktur->name ?? null,
+                'total_peserta' => $item->peserta->count(),
             ];
         });
 
@@ -155,6 +156,7 @@ class DataActivityController extends Controller
             'description' => $dataActivity->description,
             'instruktur_name' => $dataActivity->instruktur->name ?? null,
             'peserta' => $dataActivity->peserta,
+            'total_peserta' => $dataActivity->peserta->count()
         ];
 
         return response()->json([
