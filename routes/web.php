@@ -13,6 +13,7 @@ use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
 use Dflydev\DotAccessData\Data;
 use App\Http\Controllers\Sertifikat\SertifikatTemplateController;
+use App\Http\Controllers\User\UserCertificateController;
 
 Route::get('/debug-cors', function (\Illuminate\Http\Request $request) {
     \Illuminate\Support\Facades\Log::debug('DEBUG GET CORS HIT', [
@@ -39,6 +40,13 @@ Route::resource('data-activity-types', DataActivityTypeController::class);
 Route::resource('data-activities', DataActivityController::class);
 Route::resource('users', UserController::class);    
 
+// User Certificate Routes
+Route::middleware('auth:sanctum')->group(function() {
+    Route::get('/user/certificates', [UserCertificateController::class, 'index']);
+    Route::post('/certificates/assign', [UserCertificateController::class, 'assignCertificates']);
+    Route::post('/certificates/{id}/revoke', [UserCertificateController::class, 'revokeCertificate']);
+});
+
 Route::post('roles', [RoleController::class, 'store']);
 
 Route::post('instruktur/login', [LoginInstrukturController::class, 'logininstruktur']);
@@ -58,7 +66,7 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::get('/editor', function() {
         return view('sertifikat.editor');
     });
-    Route::post('/{id}/preview', [SertifikatTemplateController::class, 'previewPDF']);
+    Route::post('/{id}/preview-template', [SertifikatTemplateController::class, 'previewPDF']);
     Route::post('/upload-image', [SertifikatTemplateController::class, 'uploadImage']);
     Route::post('/', [SertifikatTemplateController::class, 'store']);
     Route::get('/{id}', [SertifikatTemplateController::class, 'show']);
@@ -66,6 +74,9 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::delete('/{id}', [SertifikatTemplateController::class, 'destroy']);
     Route::post('/{id}/toggle-active', [SertifikatTemplateController::class, 'toggleActive']);
     Route::post('/{id}/generate-pdf', [SertifikatTemplateController::class, 'generatePDF']);
+    Route::post('/{id}/generate-bulk-pdf', [SertifikatTemplateController::class, 'generateBulkPDF']);
+    Route::get('/download/{token}', [SertifikatTemplateController::class, 'downloadPDF']);
+    Route::get('/preview/{token}', [SertifikatTemplateController::class, 'previewPDFWithToken']);
 });
 
 Route::get('{any}', function () {

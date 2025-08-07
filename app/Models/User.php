@@ -31,12 +31,35 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
+    /**
+     * Get all certificates assigned to this user.
+     */
+    public function certificates()
+    {
+        return $this->hasMany(UserCertificate::class);
+    }
+
+    /**
+     * Get certificate downloads through user certificates.
+     */
+    public function certificateDownloads()
+    {
+        return $this->hasManyThrough(
+            CertificateDownload::class,
+            UserCertificate::class,
+            'user_id',
+            'id',
+            'id',
+            'certificate_download_id'
+        );
+    }
 
     protected $appends = ['data_activity'];
     /**
