@@ -17,8 +17,8 @@ class Admin extends Seeder
         //
         ModelsAdmin::create([
             'name' => 'Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
+            'email' => 'dev@diantara.net',
+            'password' => Hash::make('programmer'),
             'role_id' => 1,
         ]);
 
