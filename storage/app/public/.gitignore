@@ -1,5 +1,2 @@
 *
-.gitignore
-/public/storage/certificates
-/public/storage/activity_images
-/storage/*.key
+!.gitignore
