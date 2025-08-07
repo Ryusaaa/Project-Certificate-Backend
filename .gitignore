@@ -16,6 +16,8 @@
 /public/build
 /public/hot
 /public/storage
+/public/storage/certificates
+/public/storage/activity_images
 /storage/*.key
 /storage/pail
 /vendor
