@@ -224,7 +224,8 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        try {
+            $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'no_hp' => [
@@ -236,8 +237,29 @@ class UserController extends Controller
             'asal_institusi' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
+        ], [
+            'email.unique' => 'Email sudah terdaftar',
+            'password.required' => 'Password harus diisi',
+            'password.min' => 'Password minimal 8 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak sesuai',
+            'no_hp.regex' => 'Nomor HP harus diawali 62 atau 08 dan terdiri dari 8-15 digit angka',
+            'no_hp.required' => 'Nomor HP harus diisi',
+            'asal_institusi.required' => 'Asal institusi harus diisi',
+            'name.required' => 'Nama harus diisi',
+            'email.required' => 'Email harus diisi',
+            'no_hp.required' => 'Nomor HP harus diisi',
+            'asal_institusi.required' => 'Asal institusi harus diisi'
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $validated= $validator->validated();
         $validated['password'] = bcrypt($validated['password']);
         $user = User::create($validated);
 
@@ -245,6 +267,13 @@ class UserController extends Controller
             'message' => 'User created successfully.',
             'data' => $user
         ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Terjadi kesalahan saat membuat user.',
+            'details' => $e->getMessage()
+        ], 500);
+        }
     }
 
     /**
