@@ -900,6 +900,13 @@
                     textDiv.style.margin = '0';
                     textDiv.style.padding = '0';
                     textDiv.style.whiteSpace = 'nowrap';
+                    
+                    // Ensure font is loaded
+                    document.fonts.ready.then(() => {
+                        if (!document.fonts.check(`${element.font.weight} ${element.font.style} 16px "${element.font.family}"`)) {
+                            console.warn(`Font ${element.font.family} might not be loaded properly`);
+                        }
+                    });
                     textDiv.style.position = 'absolute';
                     textDiv.style.display = 'block';
                     textDiv.style.left = '0';

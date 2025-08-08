@@ -3,6 +3,44 @@
 <head>
     <meta charset="utf-8">
     <title>Sertifikat</title>
+    @php
+        $fonts = [
+            'Montserrat' => [
+                'folder' => 'montserrat',
+                'prefix' => 'Montserrat',
+            ],
+            'Playfair Display' => [
+                'folder' => 'playfair-display',
+                'prefix' => 'PlayfairDisplay',
+            ],
+            'Poppins' => [
+                'folder' => 'poppins',
+                'prefix' => 'Poppins',
+            ]
+        ];
+
+        $weights = [
+            ['weight' => '400', 'name' => 'Regular'],
+            ['weight' => '500', 'name' => 'Medium'],
+            ['weight' => '600', 'name' => 'SemiBold'],
+            ['weight' => '700', 'name' => 'Bold']   
+        ];
+
+        // Validate font files exist
+        foreach ($fonts as $fontFamily => $font) {
+            foreach ($weights as $weightInfo) {
+                $regularPath = public_path("fonts/{$font['folder']}/{$font['prefix']}-{$weightInfo['name']}.ttf");
+                $italicPath = public_path("fonts/{$font['folder']}/{$font['prefix']}-{$weightInfo['name']}Italic.ttf");
+                
+                if (!file_exists($regularPath)) {
+                    \Log::warning("Font file missing: {$regularPath}");
+                }
+                if (!file_exists($italicPath)) {
+                    \Log::warning("Font file missing: {$italicPath}");
+                }
+            }
+        }
+    @endphp
     <style>
         /* Font Declarations */
         /* System Fonts */
@@ -23,44 +61,24 @@
             src: local('Georgia');
         }
 
-        @php
-        $fonts = [
-            'Montserrat' => [
-                'folder' => 'montserrat',
-                'prefix' => 'Montserrat',
-            ],
-            'Playfair Display' => [
-                'folder' => 'playfair-display',
-                'prefix' => 'PlayfairDisplay',
-            ],
-            'Poppins' => [
-                'folder' => 'poppins',
-                'prefix' => 'Poppins',
-            ]
-        ];
-
-        $weights = [
-            ['weight' => '400', 'name' => 'Regular'],
-            ['weight' => '500', 'name' => 'Medium'],
-            ['weight' => '600', 'name' => 'SemiBold'],
-            ['weight' => '700', 'name' => 'Bold']
-        ];
-        @endphp
+        /* Custom Fonts */
 
         @foreach($fonts as $fontFamily => $font)
             @foreach($weights as $weightInfo)
                 /* {{ $fontFamily }} - {{ $weightInfo['name'] }} */
                 @font-face {
                     font-family: '{{ $fontFamily }}';
-                    src: url('/fonts/{{ $font['folder'] }}/{{ $font['prefix'] }}-{{ $weightInfo['name'] }}.ttf') format('truetype');
+                    src: url('{{ public_path("fonts/{$font['folder']}/{$font['prefix']}-{$weightInfo['name']}.ttf") }}') format('truetype');
                     font-weight: {{ $weightInfo['weight'] }};
                     font-style: normal;
+                    font-display: swap;
                 }
                 @font-face {
                     font-family: '{{ $fontFamily }}';
-                    src: url('/fonts/{{ $font['folder'] }}/{{ $font['prefix'] }}-{{ $weightInfo['name'] }}Italic.ttf') format('truetype');
+                    src: url('{{ public_path("fonts/{$font['folder']}/{$font['prefix']}-{$weightInfo['name']}Italic.ttf") }}') format('truetype');
                     font-weight: {{ $weightInfo['weight'] }};
                     font-style: italic;
+                    font-display: swap;
                 }
             @endforeach
         @endforeach
@@ -126,11 +144,20 @@
             z-index: 2;
         }
         .text {
-            margin: 0;
-            padding: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.2;
+            margin: 0 !important;
+            padding: 0 !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            line-height: 1.2 !important;
+            position: absolute !important;
+            transform-origin: 0 0 !important;
+            display: inline-block !important;
+            max-width: none !important;
+            /* Penting: set height agar konsisten dengan line-height */
+            height: auto !important;
+            /* Tambahkan padding minimal untuk kompensasi font metrics */
+            padding-top: 0.1em !important;
+            box-sizing: content-box !important;
         }
         @media print {
             body {
@@ -188,11 +215,18 @@
                             // Tambahkan offset berbeda untuk teks kustom dan placeholder
                             $y = $element['y'];
                             if ($element['type'] === 'text') {
-                                if (isset($element['placeholderType']) && $element['placeholderType'] !== 'custom') {
-                                    $y += $fontSize / 4; // offset yang lebih kecil untuk placeholder
-                                } else {
-                                    $y += $fontSize / 3; // offset yang lebih besar untuk teks kustom
-                                }
+                                // Adjust Y position based on font metrics
+                                $fontFamily = $element['font']['family'] ?? 'Arial';
+                                $fontMetricsOffset = [
+                                    'Arial' => 0,
+                                    'Montserrat' => $fontSize * 0.2,
+                                    'Playfair Display' => $fontSize * 0.15,
+                                    'Poppins' => $fontSize * 0.18
+                                ];
+                                
+                                // Get offset for the current font, default to Arial's offset (0)
+                                $offset = $fontMetricsOffset[$fontFamily] ?? 0;
+                                $y += $offset;
                             }
                             $elementWidth = $element['width'] ?? null;
                             $elementHeight = $element['height'] ?? null;
@@ -205,12 +239,23 @@
                                     'x' => $x,
                                     'y' => $y
                                 ],
-                                'fontSize' => $fontSize,
-                                'page_size' => [
-                                    'width' => $pageWidth,
-                                    'height' => $pageHeight
-                                ]
+                                'fontSize' => $fontSize
                             ]);
+
+                            // Process image source if it's an image element
+                            $imageSrc = null;
+                            if ($element['type'] === 'image') {
+                                $imageUrl = $element['image_url'] ?? $element['imageUrl'] ?? $element['url'] ?? $element['image'] ?? null;
+                                if ($imageUrl && str_starts_with($imageUrl, '/storage/')) {
+                                    $imagePath = storage_path('app/public/' . substr($imageUrl, 8));
+                                    if (file_exists($imagePath)) {
+                                        $imageData = base64_encode(file_get_contents($imagePath));
+                                        $imageSrc = 'data:image/' . pathinfo($imagePath, PATHINFO_EXTENSION) . ';base64,' . $imageData;
+                                    }
+                                } else {
+                                    $imageSrc = $imageUrl;
+                                }
+                            }
                         @endphp
                         <div class="element" style="
                             left: {{ $x }}pt; 
@@ -219,79 +264,43 @@
                         ">
                             @if($element['type'] === 'text')
                                 <p class="text" style="
-                                    font-size: {{ $fontSize }}pt;
-                                    font-family: '{{ $element['font']['family'] ?? 'Arial' }}', sans-serif;
-                                    font-weight: {{ $element['font']['weight'] ?? '400' }};
-                                    font-style: {{ $element['font']['style'] ?? 'normal' }};
-                                    text-align: {{ $element['textAlign'] ?? 'left' }};
-                                    color: {{ $element['color'] ?? '#000000' }};
-                                    @if($elementWidth) width: {{ $elementWidth }}pt; @endif
-                                    margin: 0;
-                                    padding: 0;
-                                    line-height: 1.2;
-                                    white-space: nowrap;
-                                    position: absolute;
-                                    display: block;
+                                    font-family: '{{ $element['font']['family'] ?? 'Arial' }}', sans-serif !important;
+                                    font-size: {{ $fontSize }}pt !important;
+                                    font-weight: {{ $element['font']['weight'] ?? '400' }} !important;
+                                    font-style: {{ $element['font']['style'] ?? 'normal' }} !important;
+                                    text-align: {{ $element['textAlign'] ?? 'left' }} !important;
+                                    color: {{ $element['color'] ?? '#000000' }} !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    line-height: 1.2 !important;
+                                    white-space: nowrap !important;
+                                    overflow: visible !important;
+                                    /* Tambahan untuk konsistensi font metrics */
+                                    vertical-align: top !important;
+                                    display: inline-block !important;
+                                    position: absolute !important;
+                                    transform-origin: 0 0 !important;
                                     @if($element['textAlign'] === 'center')
-                                        left: 50%;
-                                        transform: translateX(-50%);
+                                        transform: translateX(-50%) !important;
+                                        left: 50% !important;
                                     @elseif($element['textAlign'] === 'right')
-                                        left: 100%;
-                                        transform: translateX(-100%);
+                                        transform: translateX(-100%) !important;
+                                        left: 100% !important;
                                     @else
-                                        left: 0;
-                                        transform: none;
+                                        transform: none !important;
+                                        left: 0 !important;
                                     @endif
-                                    {{ \Log::info('Text element style:', [
-                                        'fontSize' => $fontSize,
-                                        'position' => ['x' => $x, 'y' => $y],
-                                        'text' => $element['text'] ?? '',
-                                        'align' => $element['textAlign'] ?? 'left'
-                                    ]) ? '' : '' }}
-                                    transform-origin: {{ $element['textAlign'] === 'center' ? '50%' : ($element['textAlign'] === 'right' ? '100%' : '0%') }} 0%;
-                                    @if($element['textAlign'] === 'center')
-                                        left: 50%;
-                                    @elseif($element['textAlign'] === 'right')
-                                        left: 100%;
-                                    @endif
-                                ">
-                                    {!! $element['text'] ?? '' !!}
-                                </p>
-                            @elseif($element['type'] === 'image')
-                                @php
-                                    \Log::info('Processing image element:', $element);
-                                    $imageUrl = $element['image_url'] ?? $element['imageUrl'] ?? $element['url'] ?? $element['image'] ?? null;
-                                    \Log::info('Image URL resolved to:', ['url' => $imageUrl]);
-                                    
-                                    // Convert image URL to base64 like we do for background
-                                    $imageSrc = $imageUrl;
-                                    if ($imageUrl && str_starts_with($imageUrl, '/storage/')) {
-                                        $imagePath = storage_path('app/public/' . substr($imageUrl, 8));
-                                        \Log::info('Resolving image path:', ['path' => $imagePath]);
-                                        
-                                        if (file_exists($imagePath)) {
-                                            $imageData = base64_encode(file_get_contents($imagePath));
-                                            $imageSrc = 'data:image/' . pathinfo($imagePath, PATHINFO_EXTENSION) . ';base64,' . $imageData;
-                                            \Log::info('Image successfully encoded');
-                                        } else {
-                                            \Log::error('Image file not found:', ['path' => $imagePath]);
-                                        }
-                                    }
-                                @endphp
-                                @if($imageSrc)
-                                    <img src="{{ $imageSrc }}" 
-                                        style="
-                                            @if(isset($element['width'])) width: {{ $element['width'] }}pt; @endif
-                                            @if(isset($element['height'])) height: {{ $element['height'] }}pt; @endif
-                                            object-fit: contain;
-                                            margin: 0;
-                                            padding: 0;
-                                            display: block;
-                                        ">
-                                @else
-                                    <!-- Log warning if no image URL found -->
-                                    @php \Log::warning('No image URL found in element:', $element); @endphp
-                                @endif
+                                ">{!! $element['text'] ?? '' !!}</p>
+                            @elseif($element['type'] === 'image' && $imageSrc)
+                                <img src="{{ $imageSrc }}" 
+                                    style="
+                                        @if(isset($element['width'])) width: {{ $element['width'] }}pt; @endif
+                                        @if(isset($element['height'])) height: {{ $element['height'] }}pt; @endif
+                                        object-fit: contain;
+                                        margin: 0;
+                                        padding: 0;
+                                        display: block;
+                                    ">
                             @endif
                         </div>
                     @endif
