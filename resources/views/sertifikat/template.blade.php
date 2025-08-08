@@ -4,6 +4,66 @@
     <meta charset="utf-8">
     <title>Sertifikat</title>
     <style>
+        /* Font Declarations */
+        /* System Fonts */
+        @font-face {
+            font-family: 'Times New Roman';
+            src: local('Times New Roman');
+        }
+        @font-face {
+            font-family: 'Arial';
+            src: local('Arial');
+        }
+        @font-face {
+            font-family: 'Helvetica';
+            src: local('Helvetica');
+        }
+        @font-face {
+            font-family: 'Georgia';
+            src: local('Georgia');
+        }
+
+        @php
+        $fonts = [
+            'Montserrat' => [
+                'folder' => 'montserrat',
+                'prefix' => 'Montserrat',
+            ],
+            'Playfair Display' => [
+                'folder' => 'playfair-display',
+                'prefix' => 'PlayfairDisplay',
+            ],
+            'Poppins' => [
+                'folder' => 'poppins',
+                'prefix' => 'Poppins',
+            ]
+        ];
+
+        $weights = [
+            ['weight' => '400', 'name' => 'Regular'],
+            ['weight' => '500', 'name' => 'Medium'],
+            ['weight' => '600', 'name' => 'SemiBold'],
+            ['weight' => '700', 'name' => 'Bold']
+        ];
+        @endphp
+
+        @foreach($fonts as $fontFamily => $font)
+            @foreach($weights as $weightInfo)
+                /* {{ $fontFamily }} - {{ $weightInfo['name'] }} */
+                @font-face {
+                    font-family: '{{ $fontFamily }}';
+                    src: url('/fonts/{{ $font['folder'] }}/{{ $font['prefix'] }}-{{ $weightInfo['name'] }}.ttf') format('truetype');
+                    font-weight: {{ $weightInfo['weight'] }};
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: '{{ $fontFamily }}';
+                    src: url('/fonts/{{ $font['folder'] }}/{{ $font['prefix'] }}-{{ $weightInfo['name'] }}Italic.ttf') format('truetype');
+                    font-weight: {{ $weightInfo['weight'] }};
+                    font-style: italic;
+                }
+            @endforeach
+        @endforeach
         @php
             // Use exact editor dimensions for PDF
             $pageWidth = 842;     // A4 Landscape width in points
@@ -160,7 +220,9 @@
                             @if($element['type'] === 'text')
                                 <p class="text" style="
                                     font-size: {{ $fontSize }}pt;
-                                    font-family: {{ $element['fontFamily'] ?? 'Arial' }}, sans-serif;
+                                    font-family: '{{ $element['font']['family'] ?? 'Arial' }}', sans-serif;
+                                    font-weight: {{ $element['font']['weight'] ?? '400' }};
+                                    font-style: {{ $element['font']['style'] ?? 'normal' }};
                                     text-align: {{ $element['textAlign'] ?? 'left' }};
                                     color: {{ $element['color'] ?? '#000000' }};
                                     @if($elementWidth) width: {{ $elementWidth }}pt; @endif
@@ -169,17 +231,20 @@
                                     line-height: 1.2;
                                     white-space: nowrap;
                                     position: absolute;
-                                    transform-origin: left top;
+                                    display: inline-block;
+                                    left: 50%;
+                                    transform: translateX(-50%);
                                     {{ \Log::info('Text element style:', [
                                         'fontSize' => $fontSize,
                                         'position' => ['x' => $x, 'y' => $y],
                                         'text' => $element['text'] ?? '',
                                         'align' => $element['textAlign'] ?? 'left'
                                     ]) ? '' : '' }}
+                                    transform-origin: {{ $element['textAlign'] === 'center' ? '50%' : ($element['textAlign'] === 'right' ? '100%' : '0%') }} 0%;
                                     @if($element['textAlign'] === 'center')
-                                        transform: translateX(-50%);
+                                        left: 50%;
                                     @elseif($element['textAlign'] === 'right')
-                                        transform: translateX(-100%);
+                                        left: 100%;
                                     @endif
                                 ">
                                     {!! $element['text'] ?? '' !!}

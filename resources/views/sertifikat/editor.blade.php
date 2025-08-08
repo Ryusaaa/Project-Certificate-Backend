@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Editor Sertifikat</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Lato:wght@400;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: #3498db;
@@ -169,14 +171,30 @@
         .element {
             position: absolute;
             cursor: move;
-            padding: 4px;
             border: 1px solid transparent;
-            min-width: 100px;
             white-space: nowrap;
             font-size: inherit;
             line-height: 1.2;
-            transform-origin: left top;
             display: inline-block;
+            box-sizing: content-box;
+        }
+
+        /* Styling untuk elemen yang sedang dihover atau dipilih */
+        .element:hover {
+            border-color: rgba(52, 152, 219, 0.5);
+        }
+        
+        .element.selected {
+            border-color: #3498db;
+        }
+
+        /* Container untuk teks di dalam elemen */
+        .element p {
+            position: absolute;
+            margin: 0;
+            padding: 0;
+            white-space: nowrap;
+            width: fit-content;
         }
 
 /* Penyesuaian untuk elemen dengan text-align center */
@@ -415,12 +433,38 @@
 
                 <div class="form-group">
                     <label for="fontFamily">Font</label>
-                    <select id="fontFamily">
-                        <option value="Arial">Arial</option>
-                        <option value="Times New Roman">Times New Roman</option>
-                        <option value="Calibri">Calibri</option>
-                        <option value="Helvetica">Helvetica</option>
-                        <option value="Verdana">Verdana</option>
+                    <select id="fontFamily" style="font-family: var(--selected-font)">
+                        <optgroup label="System Fonts">
+                            <option value="Arial" style="font-family: Arial">Arial</option>
+                            <option value="Times New Roman" style="font-family: 'Times New Roman'">Times New Roman</option>
+                            <option value="Helvetica" style="font-family: Helvetica">Helvetica</option>
+                            <option value="Georgia" style="font-family: Georgia">Georgia</option>
+                        </optgroup>
+                        <optgroup label="Google Fonts">
+                            <option value="Montserrat" style="font-family: 'Montserrat'">Montserrat</option>
+                            <option value="Playfair Display" style="font-family: 'Playfair Display'">Playfair Display</option>
+                            <option value="Roboto" style="font-family: 'Roboto'">Roboto</option>
+                            <option value="Lato" style="font-family: 'Lato'">Lato</option>
+                            <option value="Poppins" style="font-family: 'Poppins'">Poppins</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fontWeight">Ketebalan Font</label>
+                    <select id="fontWeight">
+                        <option value="400">Regular</option>
+                        <option value="500">Medium</option>
+                        <option value="600">Semi Bold</option>
+                        <option value="700">Bold</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fontStyle">Gaya Font</label>
+                    <select id="fontStyle">
+                        <option value="normal">Normal</option>
+                        <option value="italic">Italic</option>
                     </select>
                 </div>
 
@@ -774,7 +818,11 @@
 
                 element.text = text;
                 element.fontSize = parseInt(document.getElementById('fontSize').value) || 16;
-                element.fontFamily = document.getElementById('fontFamily').value;
+                element.font = {
+                    family: document.getElementById('fontFamily').value,
+                    weight: document.getElementById('fontWeight').value,
+                    style: document.getElementById('fontStyle').value
+                };
                 element.textAlign = document.getElementById('textAlign').value;
                 element.placeholderType = placeholderType;
             } else {
@@ -843,17 +891,45 @@
                 div.style.top = element.y + 'px';
 
                 if (element.type === 'text') {
-                    div.style.fontSize = element.fontSize + 'px';
-                    div.style.fontFamily = element.fontFamily;
-                    div.dataset.textAlign = element.textAlign;
-                    div.textContent = element.text;
+                    const textDiv = document.createElement('p');
+                    textDiv.style.fontSize = element.fontSize + 'px';
+                    textDiv.style.fontFamily = "'" + element.font.family + "', sans-serif";
+                    textDiv.style.fontWeight = element.font.weight || '400';
+                    textDiv.style.fontStyle = element.font.style || 'normal';
+                    textDiv.style.textAlign = element.textAlign;
+                    textDiv.style.margin = '0';
+                    textDiv.style.padding = '0';
+                    textDiv.style.whiteSpace = 'nowrap';
+                    textDiv.style.position = 'absolute';
+                    textDiv.style.display = 'block';
+                    textDiv.style.left = '0';
+                    textDiv.style.top = '0';
 
-                    if (element.placeholderType !== 'custom') {
-                        const label = document.createElement('div');
-                        label.className = 'placeholder-label';
-                        label.textContent = element.placeholderType.toUpperCase();
-                        div.appendChild(label);
-                    }
+                    // Set width to auto to get natural text width
+                    textDiv.style.width = 'auto';
+                    textDiv.textContent = element.text;
+                    div.appendChild(textDiv);
+
+                    // Add a slight delay to ensure text is rendered before measuring
+                    setTimeout(() => {
+                        // Set the container size to match the text content
+                        const bounds = textDiv.getBoundingClientRect();
+                        div.style.width = bounds.width + 'px';
+                        div.style.height = bounds.height + 'px';
+
+                        // Position the container based on alignment
+                        if (element.textAlign === 'center') {
+                            div.style.left = element.x + 'px';
+                            div.style.transform = 'translateX(-50%)';
+                            div.style.transformOrigin = '50% 0';
+                        } else if (element.textAlign === 'right') {
+                            div.style.left = (element.x - bounds.width) + 'px';
+                            div.style.transformOrigin = '100% 0';
+                        } else {
+                            div.style.left = element.x + 'px';
+                            div.style.transformOrigin = '0 0';
+                        }
+                    }, 0);
                 } else {
                     const img = document.createElement('img');
                     img.src = element.imageUrl;
@@ -980,7 +1056,9 @@
                 document.getElementById('placeholderType').value = element.placeholderType || 'custom';
                 document.getElementById('elementText').value = element.text;
                 document.getElementById('fontSize').value = element.fontSize;
-                document.getElementById('fontFamily').value = element.fontFamily;
+                document.getElementById('fontFamily').value = element.font.family;
+                document.getElementById('fontWeight').value = element.font.weight || '400';
+                document.getElementById('fontStyle').value = element.font.style || 'normal';
                 document.getElementById('textAlign').value = element.textAlign;
             } else {
                 // Update width and height for image
@@ -1033,7 +1111,7 @@
                         ...(el.type === 'text' ? {
                             text: el.text,
                             fontSize: el.fontSize,
-                            fontFamily: el.fontFamily,
+                            font: el.font,
                             textAlign: el.textAlign,
                             placeholderType: el.placeholderType
                         } : {

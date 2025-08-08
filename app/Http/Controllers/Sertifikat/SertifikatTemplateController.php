@@ -367,6 +367,62 @@ class SertifikatTemplateController extends Controller
             unset($element['originalX'], $element['originalY']);
             unset($element['originalWidth'], $element['originalHeight']);
 
+            // Validate and process font for text elements
+            if ($element['type'] === 'text') {
+                // Initialize font object with defaults if not set
+                if (!isset($element['font']) || !is_array($element['font'])) {
+                    $element['font'] = [
+                        'family' => 'Arial',
+                        'weight' => '400',
+                        'style' => 'normal'
+                    ];
+                } else {
+                    // Ensure all font properties exist with defaults
+                    $element['font'] = array_merge([
+                        'family' => 'Arial',
+                        'weight' => '400',
+                        'style' => 'normal'
+                    ], $element['font']);
+                }
+                
+                // Validate and clean font properties
+                $allowedWeights = ['400', '500', '600', '700'];
+                $allowedFonts = [
+                    // System Fonts
+                    'Times New Roman',
+                    'Arial',
+                    'Helvetica',
+                    'Georgia',
+                    // Google Fonts
+                    'Montserrat',
+                    'Playfair Display',
+                    'Roboto',
+                    'Lato',
+                    'Poppins'
+                ];
+
+                // Validate font weight
+                if (!in_array($element['font']['weight'], $allowedWeights)) {
+                    $element['font']['weight'] = '400';
+                    Log::warning('Invalid font weight specified, falling back to 400', [
+                        'specified_weight' => $element['font']['weight'],
+                        'allowed_weights' => $allowedWeights
+                    ]);
+                }
+
+                // Validate font family
+                if (!in_array($element['font']['family'], $allowedFonts)) {
+                    $element['font']['family'] = 'Arial';
+                    Log::warning('Invalid font family specified, falling back to Arial', [
+                        'specified_font' => $element['font']['family'],
+                        'allowed_fonts' => $allowedFonts
+                    ]);
+                }
+
+                // Log font properties for debugging
+                Log::info('Final font properties:', $element['font']);
+            }
+
             // Handle image elements
             if ($element['type'] === 'image') {
                 // Try to get image URL from various possible fields
