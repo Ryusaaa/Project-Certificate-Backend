@@ -231,9 +231,17 @@
                                     line-height: 1.2;
                                     white-space: nowrap;
                                     position: absolute;
-                                    display: inline-block;
-                                    left: 50%;
-                                    transform: translateX(-50%);
+                                    display: block;
+                                    @if($element['textAlign'] === 'center')
+                                        left: 50%;
+                                        transform: translateX(-50%);
+                                    @elseif($element['textAlign'] === 'right')
+                                        left: 100%;
+                                        transform: translateX(-100%);
+                                    @else
+                                        left: 0;
+                                        transform: none;
+                                    @endif
                                     {{ \Log::info('Text element style:', [
                                         'fontSize' => $fontSize,
                                         'position' => ['x' => $x, 'y' => $y],

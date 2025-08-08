@@ -923,11 +923,14 @@
                             div.style.transform = 'translateX(-50%)';
                             div.style.transformOrigin = '50% 0';
                         } else if (element.textAlign === 'right') {
-                            div.style.left = (element.x - bounds.width) + 'px';
+                            div.style.left = element.x + 'px';
                             div.style.transformOrigin = '100% 0';
+                            div.style.transform = 'translateX(-100%)';
                         } else {
+                            // Left alignment
                             div.style.left = element.x + 'px';
                             div.style.transformOrigin = '0 0';
+                            div.style.transform = 'none';
                         }
                     }, 0);
                 } else {
