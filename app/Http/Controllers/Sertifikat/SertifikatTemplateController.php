@@ -740,11 +740,11 @@ class SertifikatTemplateController extends Controller
         }
     }
 
-    public function getUserCertificates($userId)
+    public function getUserCertificates($id)
     {
         try {
             // Check if user exists
-            $user = \App\Models\User::find($userId);
+            $user = \App\Models\User::find($id);
             if (!$user) {
                 return response()->json([
                     'status' => 'error',
@@ -754,7 +754,7 @@ class SertifikatTemplateController extends Controller
             
             // Get certificates from UserCertificate with the download tokens
             $certificates = \App\Models\UserCertificate::with('certificateDownload')
-                ->where('user_id', $userId)
+                ->where('user_id', $id)
                 ->where('status', 'active')
                 ->get()
                 ->map(function($userCertificate) {
