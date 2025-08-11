@@ -34,13 +34,13 @@ Route::get('users/download-template', [UserController::class, 'downloadTemplate'
     ->name('users.downloadTemplate');    
 Route::post('data-activities/{id}/import', [UserController::class, 'import']);
 Route::post('data-activities/{id}/users', [UserController::class, 'inputUserDataActivity']);
-
+Route::get('data-activities/certificate-templates', [DataActivityController::class, 'getCertificateTemplates']);
 Route::resource('data-activity-types', DataActivityTypeController::class);
-
 Route::resource('data-activities', DataActivityController::class);
-Route::resource('users', UserController::class);    
+   
 
 // User Certificate Routes
+Route::resource('users', UserController::class); 
 Route::middleware('auth:sanctum')->group(function() {
     Route::get('/user/certificates', [UserCertificateController::class, 'index']);
     Route::post('/certificates/assign', [UserCertificateController::class, 'assignCertificates']);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DataActivity;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Sertifikat;
 
 class DataActivityController extends Controller
 {
@@ -13,6 +14,13 @@ class DataActivityController extends Controller
      * Helper function to handle Base64 encoded images embedded in a string.
      * It saves them as files and replaces the src attribute with the new URL.
      */
+
+
+    public function getCertificateTemplates()
+    {
+        $templates = Sertifikat::where('is_active', true)->get();
+        return response()->json($templates);
+    }
 
 
     private function handleEmbeddedImages($description)

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->longText('elements')->nullable();  // Elemen-elemen dalam format JSON
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            
         });
     }
 
