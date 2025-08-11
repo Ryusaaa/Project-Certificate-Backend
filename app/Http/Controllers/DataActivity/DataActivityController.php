@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DataActivity;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Sertifikat;
 
 class DataActivityController extends Controller
 {
@@ -13,6 +14,46 @@ class DataActivityController extends Controller
      * Helper function to handle Base64 encoded images embedded in a string.
      * It saves them as files and replaces the src attribute with the new URL.
      */
+
+
+    public function updateSertifikatTemplate(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'sertifikat_template_id' => 'required|exists:sertifikats,id',
+            ]);
+
+            $dataActivity = DataActivity::findOrFail($id);
+            $dataActivity->sertifikat_id = $request->sertifikat_template_id;
+            $dataActivity->save();
+
+            // Tambahkan data sertifikat ke response
+            $dataActivity->load('sertifikat');  // Eager load relasi sertifikat
+
+            return response()->json([
+                'message' => 'Template sertifikat berhasil disimpan',
+                'data' => $dataActivity
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal menyimpan template sertifikat',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCertificateTemplates()
+    {
+    $templates = Sertifikat::select('id', 'name', 'is_active')
+                            ->where('is_active', true)
+                            ->get();
+    return response()->json([
+        'data' => $templates,
+        'message' => 'Template sertifikat berhasil diambil'
+    ]);
+
+
+    }
 
 
     private function handleEmbeddedImages($description)
@@ -138,7 +179,7 @@ class DataActivityController extends Controller
      */
     public function show(string $id)
     {
-        $dataActivity = DataActivity::with(['activityType', 'instruktur', 'peserta'])
+        $dataActivity = DataActivity::with(['activityType', 'instruktur', 'peserta', 'sertifikat'])
             ->find($id);
 
         if (!$dataActivity) {
@@ -156,7 +197,9 @@ class DataActivityController extends Controller
             'description' => $dataActivity->description,
             'instruktur_name' => $dataActivity->instruktur->name ?? null,
             'peserta' => $dataActivity->peserta,
-            'total_peserta' => $dataActivity->peserta->count()
+            'total_peserta' => $dataActivity->peserta->count(),
+            'sertifikat_id' => $dataActivity->sertifikat_id,
+            'sertifikat' => $dataActivity->sertifikat
         ];
 
         return response()->json([

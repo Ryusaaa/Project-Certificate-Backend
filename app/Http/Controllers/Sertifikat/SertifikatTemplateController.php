@@ -359,9 +359,27 @@ class SertifikatTemplateController extends Controller
             // Log incoming element for debugging
             Log::info('Processing element:', $element);
 
-            // Ensure coordinates are within bounds
-            $element['x'] = max(0, min($element['x'], $this->pdfWidth));
-            $element['y'] = max(0, min($element['y'], $this->pdfHeight));
+            // Calculate scale factor for PDF coordinates
+            $scaleFactor = 1;  // Adjust this if needed based on your editor's coordinate system
+            
+            // Ensure coordinates are within bounds and properly scaled
+            $element['x'] = max(0, min($element['x'] * $scaleFactor, $this->pdfWidth));
+            $element['y'] = max(0, min($element['y'] * $scaleFactor, $this->pdfHeight));
+
+            // Scale size properties if they exist
+            if (isset($element['width'])) {
+                $element['width'] = $element['width'] * $scaleFactor;
+            }
+            if (isset($element['height'])) {
+                $element['height'] = $element['height'] * $scaleFactor;
+            }
+
+            // For text elements, ensure font size is properly scaled
+            if ($element['type'] === 'text' && isset($element['fontSize'])) {
+                $element['fontSize'] = intval($element['fontSize']);
+                // Ensure minimum and maximum font sizes
+                $element['fontSize'] = max(8, min($element['fontSize'], 72));
+            }
 
             // Remove any scaling-related properties
             unset($element['originalX'], $element['originalY']);
@@ -393,12 +411,47 @@ class SertifikatTemplateController extends Controller
                     'Arial',
                     'Helvetica',
                     'Georgia',
-                    // Google Fonts
+                    // Custom Fonts
                     'Montserrat',
                     'Playfair Display',
+                    'Poppins',
+                    'Alice',
+                    'Allura',
+                    'Anonymous Pro',
+                    'Anton',
+                    'Arapey',
+                    'Archivo Black',
+                    'Arimo',
+                    'Barlow',
+                    'Bebas Neue',
+                    'Belleza',
+                    'Bree Serif',
+                    'Bryndan Write',
+                    'Chewy',
+                    'Chunkfive Ex',
+                    'Cormorant Garamond',
+                    'DM Sans',
+                    'DM Serif Display',
+                    'Forum',
+                    'Great Vibes',
+                    'Hammersmith One',
+                    'Inria Serif',
+                    'Inter',
+                    'League Gothic',
+                    'League Spartan',
+                    'Libre Baskerville',
+                    'Lora',
+                    'Merriweather',
+                    'Nunito',
+                    'Open Sans',
+                    'Oswald',
+                    'Questrial',
+                    'Quicksand',
+                    'Raleway',
                     'Roboto',
-                    'Lato',
-                    'Poppins'
+                    'Shrikhand',
+                    'Tenor Sans',
+                    'Yeseva One'
                 ];
 
                 // Validate font weight

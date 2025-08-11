@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Editor Sertifikat</title>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Lato:wght@400;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Alice&family=Allura&family=Anonymous+Pro:wght@400;700&family=Anton&family=Arapey:ital@0;1&family=Archivo+Black&family=Arimo:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Bebas+Neue&family=Belleza&family=Bree+Serif&family=Chewy&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Forum&family=Great+Vibes&family=Hammersmith+One&family=Inria+Serif:wght@400;700&family=Inter:wght@400;500;600;700&family=League+Gothic&family=League+Spartan:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Questrial&family=Quicksand:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Shrikhand&family=Tenor+Sans&family=Yeseva+One&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: #3498db;
@@ -440,12 +440,47 @@
                             <option value="Helvetica" style="font-family: Helvetica">Helvetica</option>
                             <option value="Georgia" style="font-family: Georgia">Georgia</option>
                         </optgroup>
-                        <optgroup label="Google Fonts">
+                        <optgroup label="Custom Fonts">
                             <option value="Montserrat" style="font-family: 'Montserrat'">Montserrat</option>
                             <option value="Playfair Display" style="font-family: 'Playfair Display'">Playfair Display</option>
-                            <option value="Roboto" style="font-family: 'Roboto'">Roboto</option>
-                            <option value="Lato" style="font-family: 'Lato'">Lato</option>
                             <option value="Poppins" style="font-family: 'Poppins'">Poppins</option>
+                            <option value="Alice" style="font-family: 'Alice'">Alice</option>
+                            <option value="Allura" style="font-family: 'Allura'">Allura</option>
+                            <option value="Anonymous Pro" style="font-family: 'Anonymous Pro'">Anonymous Pro</option>
+                            <option value="Anton" style="font-family: 'Anton'">Anton</option>
+                            <option value="Arapey" style="font-family: 'Arapey'">Arapey</option>
+                            <option value="Archivo Black" style="font-family: 'Archivo Black'">Archivo Black</option>
+                            <option value="Arimo" style="font-family: 'Arimo'">Arimo</option>
+                            <option value="Barlow" style="font-family: 'Barlow'">Barlow</option>
+                            <option value="Bebas Neue" style="font-family: 'Bebas Neue'">Bebas Neue</option>
+                            <option value="Belleza" style="font-family: 'Belleza'">Belleza</option>
+                            <option value="Bree Serif" style="font-family: 'Bree Serif'">Bree Serif</option>
+                            <option value="Bryndan Write" style="font-family: 'Bryndan Write'">Bryndan Write</option>
+                            <option value="Chewy" style="font-family: 'Chewy'">Chewy</option>
+                            <option value="Chunkfive Ex" style="font-family: 'Chunkfive Ex'">Chunkfive Ex</option>
+                            <option value="Cormorant Garamond" style="font-family: 'Cormorant Garamond'">Cormorant Garamond</option>
+                            <option value="DM Sans" style="font-family: 'DM Sans'">DM Sans</option>
+                            <option value="DM Serif Display" style="font-family: 'DM Serif Display'">DM Serif Display</option>
+                            <option value="Forum" style="font-family: 'Forum'">Forum</option>
+                            <option value="Great Vibes" style="font-family: 'Great Vibes'">Great Vibes</option>
+                            <option value="Hammersmith One" style="font-family: 'Hammersmith One'">Hammersmith One</option>
+                            <option value="Inria Serif" style="font-family: 'Inria Serif'">Inria Serif</option>
+                            <option value="Inter" style="font-family: 'Inter'">Inter</option>
+                            <option value="League Gothic" style="font-family: 'League Gothic'">League Gothic</option>
+                            <option value="League Spartan" style="font-family: 'League Spartan'">League Spartan</option>
+                            <option value="Libre Baskerville" style="font-family: 'Libre Baskerville'">Libre Baskerville</option>
+                            <option value="Lora" style="font-family: 'Lora'">Lora</option>
+                            <option value="Merriweather" style="font-family: 'Merriweather'">Merriweather</option>
+                            <option value="Nunito" style="font-family: 'Nunito'">Nunito</option>
+                            <option value="Open Sans" style="font-family: 'Open Sans'">Open Sans</option>
+                            <option value="Oswald" style="font-family: 'Oswald'">Oswald</option>
+                            <option value="Questrial" style="font-family: 'Questrial'">Questrial</option>
+                            <option value="Quicksand" style="font-family: 'Quicksand'">Quicksand</option>
+                            <option value="Raleway" style="font-family: 'Raleway'">Raleway</option>
+                            <option value="Roboto" style="font-family: 'Roboto'">Roboto</option>
+                            <option value="Shrikhand" style="font-family: 'Shrikhand'">Shrikhand</option>
+                            <option value="Tenor Sans" style="font-family: 'Tenor Sans'">Tenor Sans</option>
+                            <option value="Yeseva One" style="font-family: 'Yeseva One'">Yeseva One</option>
                         </optgroup>
                     </select>
                 </div>
@@ -472,7 +507,7 @@
                     <label for="textAlign">Perataan Teks</label>
                     <select id="textAlign">
                         <option value="left">Kiri</option>
-                        <option value="center">Tengah</option>
+                        <option value="center" selected>Tengah</option>
                         <option value="right">Kanan</option>
                     </select>
                 </div>
@@ -959,6 +994,24 @@
 
             updateElementsList();
         }
+
+        // Event listener untuk dropdown fontFamily
+        document.addEventListener('DOMContentLoaded', function() {
+            const fontFamilySelect = document.getElementById('fontFamily');
+            const elementTextInput = document.getElementById('elementText');
+            fontFamilySelect.addEventListener('change', function() {
+                const selectedFont = fontFamilySelect.value;
+                // Ubah font pada input teks
+                if (elementTextInput) {
+                    elementTextInput.style.fontFamily = `'${selectedFont}', Arial, sans-serif`;
+                }
+                // Jika sedang edit elemen teks, update property font dan preview
+                if (selectedElement && selectedElement.type === 'text') {
+                    selectedElement.font.family = selectedFont;
+                    updatePreview();
+                }
+            });
+        });
 
         function startDragging(e) {
             e.preventDefault();
