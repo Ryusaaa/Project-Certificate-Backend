@@ -21,6 +21,8 @@ use App\Http\Controllers\User\UserCertificateController;
 
 // --- DATA ACTIVITY ROUTES ---
 // Route spesifik harus selalu berada di atas route resource atau route dinamis.
+
+Route::put('data-activities/{id}/sertifikat-template', [DataActivityController::class, 'updateSertifikatTemplate']);
 Route::get('data-activities/certificate-templates', [DataActivityController::class, 'getCertificateTemplates']);
 Route::post('data-activities/{id}/import', [UserController::class, 'import']);
 Route::post('data-activities/{id}/users', [UserController::class, 'inputUserDataActivity']);
