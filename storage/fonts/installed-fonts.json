@@ -1,11 +1,11 @@
 {
     "playfair display": {
-        "normal": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_normal_3323f5a2a50f838b71cd23f728440291",
-        "500": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_5d07c0309b18cac24b8013875cb0b582",
-        "500_italic": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_italic_92cf3af1e0fffcf2ddccbd7874f82e9c",
-        "600": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_c3e18b380a599b593e99d5dbf4c9d9f2",
-        "600_italic": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_italic_652fdc6851a31dc0376a1b08e02d5709",
-        "bold": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_bold_2e4b0cd59c3f2e582fceba71fdbdbe79",
-        "bold_italic": "playfair_display_bold_italic_7269a56877aed8ae2a80695fb3525634"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_normal_3e00b387ac65a0de2f97ca0e656b9258",
+        "500": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_1077f2ec77264596674de6a16ed0fea6",
+        "500_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_italic_3b8ab0beb2c305c5ac280ac1060f67b2",
+        "600": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_c99814250dd3454d416f234527e78f5d",
+        "600_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_italic_3dba071dbc63b3e29160053a1b7a8cd5",
+        "bold": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_bold_ee8e29b817c0737bc4e332385d2b4810",
+        "bold_italic": "playfair_display_bold_italic_a7431f1b129f6eff599ef1551d130ae8"
     }
 }
