@@ -15,9 +15,10 @@ class Sertifikat extends Model
     ];
 
     protected $casts = [
+        'id' => 'integer',
         'layout' => 'array',
         'elements' => 'array',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
     public $timestamps = true;
