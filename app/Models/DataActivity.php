@@ -20,7 +20,8 @@ class DataActivity extends Model
         'time_end', 
         'activity_type_id',
         'description',
-        'instruktur_id'
+        'instruktur_id',
+        'sertifikat_id'
     ];
 
     // Casting ini sudah baik untuk memastikan tipe data yang konsisten.
