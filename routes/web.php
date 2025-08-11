@@ -35,12 +35,6 @@ Route::resource('data-activity-types', DataActivityTypeController::class);
 // --- USER & CERTIFICATE ROUTES ---
 Route::get('users/download-template', [UserController::class, 'downloadTemplate'])->name('users.downloadTemplate');
 Route::resource('users', UserController::class);
-Route::middleware('auth:sanctum')->group(function() {
-    Route::get('/user/certificates', [UserCertificateController::class, 'index']);
-    Route::post('/certificates/assign', [UserCertificateController::class, 'assignCertificates']);
-    Route::post('/certificates/{id}/revoke', [UserCertificateController::class, 'revokeCertificate']);
-});
-
 
 // --- ADMIN & INSTRUKTUR AUTH & MANAGEMENT ---
 Route::post('roles', [RoleController::class, 'store']);
