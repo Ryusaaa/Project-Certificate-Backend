@@ -46,12 +46,13 @@ class DataActivity extends Model
         return $this->belongsTo(Instruktur::class, 'instruktur_id');
     }
 
-    /**
-     * Mendefinisikan relasi ke peserta (Users).
-     * Nama 'participants' lebih deskriptif daripada 'users' dalam konteks ini.
-     */
     public function peserta()
     {
         return $this->belongsToMany(User::class, 'data_activity_user', 'data_activity_id', 'user_id');
+    }
+
+    public function sertifikat()
+    {
+        return $this->belongsTo(Sertifikat::class, 'sertifikat_id');
     }
 }
