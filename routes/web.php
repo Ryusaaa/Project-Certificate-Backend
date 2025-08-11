@@ -77,6 +77,7 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::post('/{id}/generate-bulk-pdf', [SertifikatTemplateController::class, 'generateBulkPDF']);
     Route::get('/download/{token}', [SertifikatTemplateController::class, 'downloadPDF']);
     Route::get('/preview/{token}', [SertifikatTemplateController::class, 'previewPDFWithToken']);
+    Route::get('/users/{userId}/certificates', [SertifikatTemplateController::class, 'getUserCertificates']);
 });
 
 Route::get('{any}', function () {

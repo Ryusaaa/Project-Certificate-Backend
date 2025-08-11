@@ -115,7 +115,7 @@ class SertifikatTemplateController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Template created successfully',
-                'data' => $template
+                'data' => $template,
             ], 201);
 
         } catch (\Exception $e) {
@@ -683,6 +683,58 @@ class SertifikatTemplateController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getUserCertificates($userId)
+    {
+        try {
+            // Check if user exists
+            $user = \App\Models\User::find($userId);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User tidak ditemukan'
+                ], 404);
+            }
+            
+            // Get certificates from UserCertificate with the download tokens
+            $certificates = \App\Models\UserCertificate::with('certificateDownload')
+                ->where('user_id', $userId)
+                ->where('status', 'active')
+                ->get()
+                ->map(function($userCertificate) {
+                    $download = $userCertificate->certificateDownload;
+                    if (!$download) {
+                        return null;
+                    }
+                    return [
+                        'id' => $userCertificate->id,
+                        'certificate_id' => $userCertificate->sertifikat_id,
+                        'recipient_name' => $download->recipient_name,
+                        'certificate_number' => $download->certificate_number,
+                        'view_url' => '/sertifikat-templates/preview/' . $download->token,
+                        'download_url' => '/sertifikat-templates/download/' . $download->token,
+                        'download_token' => $download->token,
+                        'expires_at' => $download->expires_at,
+                        'assigned_at' => $userCertificate->created_at,
+                        'status' => $userCertificate->status
+                    ];
+                })
+                ->filter() // Remove any null values
+                ->values(); // Reset array keys
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $certificates
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching user certificates: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data sertifikat: ' . $e->getMessage()
             ], 500);
         }
     }
