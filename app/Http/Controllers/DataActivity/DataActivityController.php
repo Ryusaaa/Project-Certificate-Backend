@@ -16,6 +16,19 @@ class DataActivityController extends Controller
      */
 
 
+    public function updateSertifikatTemplate(Request $request, $id)
+    {
+        $request->validate([
+            'sertifikat_template_id' => 'required|exists:sertifikats,id',
+        ]);
+
+        $dataActivity = DataActivity::findOrFail($id);
+        $dataActivity->sertifikat_id = $request->sertifikat_template_id;
+        $dataActivity->save();
+
+        return response()->json(['message' => 'Template sertifikat berhasil disimpan', 'data' => $dataActivity]);
+    }
+
     public function getCertificateTemplates()
     {
         $templates = Sertifikat::where('is_active', true)->get();
