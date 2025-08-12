@@ -30,7 +30,7 @@ class UserCertificate extends Model
      */
     public function certificateDownload()
     {
-        return $this->belongsTo(CertificateDownload::class);
+        return $this->belongsTo(CertificateDownload::class, 'certificate_download_id');
     }
 
     /**

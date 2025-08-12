@@ -43,7 +43,7 @@ class User extends Authenticatable
      */
     public function certificates()
     {
-        return $this->hasMany(UserCertificate::class);
+        return $this->hasMany(UserCertificate::class, 'user_id');
     }
 
     /**
@@ -81,15 +81,20 @@ class User extends Authenticatable
         return $this->daftarActivity()->get();
     }
 
-     public function role() 
+    public function role()
     {
-        return $this->belongsTo(Role::class, 'role_id');  
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     public function daftarActivity()
     {
         return $this->belongsToMany(DataActivity::class, 'data_activity_user', 'user_id', 'data_activity_id')
-        ->select(['data_activity.id', 'data_activity.activity_name']);
+            ->select(['data_activity.id', 'data_activity.activity_name']);
+    }
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
     }
 
 }
