@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Models\CertificateDownload;
+use Illuminate\Validation\ValidationException;
 
 class SertifikatTemplateController extends Controller
 {
