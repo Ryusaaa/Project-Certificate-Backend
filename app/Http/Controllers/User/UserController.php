@@ -124,8 +124,6 @@ class UserController extends Controller
             'asal_institusi.required' => 'Asal institusi harus diisi',
             'name.required' => 'Nama harus diisi',
             'email.required' => 'Email harus diisi',
-            'no_hp.required' => 'Nomor HP harus diisi',
-            'asal_institusi.required' => 'Asal institusi harus diisi'
         ]);
 
         if ($validator->fails()) {

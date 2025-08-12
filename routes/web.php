@@ -11,7 +11,7 @@ use App\Http\Controllers\DataActivity\DataActivityTypeController;
 use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
 use App\Http\Controllers\Sertifikat\SertifikatTemplateController;
-use App\Http\Controllers\User\UserCertificateController;
+use App\Http\Controllers\Sertifikat\SertifikatPesertaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,12 +34,6 @@ Route::resource('data-activity-types', DataActivityTypeController::class);
 // --- USER & CERTIFICATE ROUTES ---
 Route::get('users/download-template', [UserController::class, 'downloadTemplate'])->name('users.downloadTemplate');
 Route::resource('users', UserController::class);
-Route::middleware('auth:sanctum')->group(function() {
-    Route::get('/user/certificates', [UserCertificateController::class, 'index']);
-    Route::post('/certificates/assign', [UserCertificateController::class, 'assignCertificates']);
-    Route::post('/certificates/{id}/revoke', [UserCertificateController::class, 'revokeCertificate']);
-});
-
 
 // --- ADMIN & INSTRUKTUR AUTH & MANAGEMENT ---
 Route::post('roles', [RoleController::class, 'store']);
@@ -67,14 +61,14 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::delete('/{id}', [SertifikatTemplateController::class, 'destroy']);
     
     Route::post('/upload-image', [SertifikatTemplateController::class, 'uploadImage']);
-    Route::post('/{id}/toggle-active', [SertifikatTemplateController::class, 'toggleActive']);
     
     // PDF related routes
-    Route::post('/{id}/preview-template', [SertifikatTemplateController::class, 'previewPDF']);
-    Route::post('/{id}/generate-pdf', [SertifikatTemplateController::class, 'generatePDF']);
-    Route::post('/{id}/generate-bulk-pdf', [SertifikatTemplateController::class, 'generateBulkPDF']);
-    Route::get('/download/{token}', [SertifikatTemplateController::class, 'downloadPDF']);
-    Route::get('/preview/{token}', [SertifikatTemplateController::class, 'previewPDFWithToken']);
+    Route::post('/{id}/preview-template', [SertifikatPesertaController::class, 'previewPDF']);
+    Route::post('/{id}/generate-pdf', [SertifikatPesertaController::class, 'generatePDF']);
+    Route::post('/{id}/generate-bulk-pdf', [SertifikatPesertaController::class, 'generateBulkPDF']);
+    Route::get('/download/{token}', [SertifikatPesertaController::class, 'downloadPDF']);
+    Route::get('/preview/{token}', [SertifikatPesertaController::class, 'previewPDFWithToken']);
+    Route::get('/users/{userId}/certificates', [SertifikatPesertaController::class, 'getUserCertificates']);
 });
 
 
