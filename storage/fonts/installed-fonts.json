@@ -1,112 +1,112 @@
 {
     "playfair display": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_normal_16795a7b457507e14a03b205bc11ea7a",
-        "500": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_aed568bddbaa3261d936c12360d90d04",
-        "500_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_italic_0f3fced1cae437b165ed9d43ebaf8103",
-        "600": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_acba18cd96782574df77d423bcc351ee",
-        "600_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_italic_4d855005ecd7651c7129e708dd982b46",
-        "bold": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_bold_44e7094692d6a7b98a0771e1d5dc5c06",
-        "bold_italic": "playfair_display_bold_italic_dc1ec7b6e76858eadb577cc537d5d00c"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_normal_3e00b387ac65a0de2f97ca0e656b9258",
+        "500": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_1077f2ec77264596674de6a16ed0fea6",
+        "500_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_italic_3b8ab0beb2c305c5ac280ac1060f67b2",
+        "600": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_c99814250dd3454d416f234527e78f5d",
+        "600_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_600_italic_3dba071dbc63b3e29160053a1b7a8cd5",
+        "bold": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_bold_ee8e29b817c0737bc4e332385d2b4810",
+        "bold_italic": "playfair_display_bold_italic_a7431f1b129f6eff599ef1551d130ae8"
     },
     "poppins": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_normal_79d7bb4103dce4253db2c55dd5f7648c",
-        "500": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_129f81ba47c30f2462a215cb54ce87a3",
-        "500_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_italic_f54ae34f2e99b881929a1fbf94149348",
-        "600": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_3344e220aed54e41c0e764ce0bb06969",
-        "600_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_italic_1dc17f0728fd33dcb62e8003d58aeb79",
-        "bold": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_a8d8505c5f39fe3db5e5c22e46dd5d92",
-        "bold_italic": "poppins_bold_italic_8b3e7043ac8aabbc123f68f00ec73098"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_normal_8b57b2757e823f79977de3b45b235e20",
+        "500": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_aacfacd2c142e0f968e324fab4530d00",
+        "500_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_italic_6ead332ea8bd3eea80505a606ab1acdb",
+        "600": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_91cddb8288be30928127e10e866dea0b",
+        "600_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_italic_6cf6f9c263904915462fd6b7697637d4",
+        "bold": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_69672361a383e812bb54db72b00efb97",
+        "bold_italic": "poppins_bold_italic_7e4cd75432e88cba2039e81508e6dc02"
     },
     "alice": {
-        "normal": "alice_normal_8b914de36147b82e0678388f590f0215"
+        "normal": "alice_normal_79ef068e2ac51725a50eefc0e11a346a"
     },
     "allura": {
-        "normal": "allura_normal_15c6b060b1e3b239f85fde83ef175f1c"
+        "normal": "allura_normal_e9f5f798cfda04ea4519a544872ce39b"
     },
     "anonymous pro": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/anonymous_pro_normal_ba8dfd16bf1e2a1d382b30785f12ca24",
-        "bold": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/anonymous_pro_bold_d375005b515a1124b47ce97c95643ac8",
-        "bold_italic": "anonymous_pro_bold_italic_c2a34ecbaff5e8dfa0505624b983318a"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/anonymous_pro_normal_4c6a2b99326142dcff9625961fcfd1db",
+        "bold": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/anonymous_pro_bold_99886d1e0d27cb191fd02f3319a542e8",
+        "bold_italic": "anonymous_pro_bold_italic_b0031a2e4c0df6470048f47f54813f5c"
     },
     "anton": {
-        "normal": "anton_normal_1d6aa2914e30dabcc9a16cf76ca620d5"
+        "normal": "anton_normal_37b00b0a72c9cfd89176ef2e69944d52"
     },
     "arapey": {
-        "normal": "arapey_normal_e3160247971d4facfc2fcb68b0b6c23a"
+        "normal": "arapey_normal_114843e1cd1de6ea53baf990406fee3d"
     },
     "archivo black": {
-        "normal": "archivo_black_normal_8fbe65078092c78da821effb87e58340"
+        "normal": "archivo_black_normal_269d23e83d2330055d102e56400188c1"
     },
     "barlow": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_normal_7f7585998cd985992e3ca7114bd4412f",
-        "500": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_500_808c16b97001943b3cae2689d0ac65d0",
-        "500_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_500_italic_0f479ecff116864343bc7b6171f24419",
-        "600": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_600_e5c24d30b2d8cd2e9db90b1ef6b1eff0",
-        "600_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_600_italic_5c8f769c55a6b9327fed2b31e58b0e73",
-        "bold": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_bold_04d79ffdf3a4159bd96ecddc71a321f2",
-        "bold_italic": "barlow_bold_italic_4e38f9b28cac965d854c00b111e79f12"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_normal_6b9832198c482bcd51b6f5d8e668c61c",
+        "500": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_500_70d62aee0925239c11768a9f847cfa50",
+        "500_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_500_italic_c5e4472190c53a9f9b2c90a98919b553",
+        "600": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_600_caee30d0f7050e46d447c1a5bef6828b",
+        "600_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_600_italic_85f360a36439b365cb886b10ef6c22a8",
+        "bold": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/barlow_bold_48c837ec437daed9215da2161c2bae44",
+        "bold_italic": "barlow_bold_italic_d994ec1f45f876f3875f2106972c5850"
     },
     "bebas neue": {
-        "normal": "bebas_neue_normal_608e238574f1d801471b36d786538006"
+        "normal": "bebas_neue_normal_1f97f75936c3458b65aca6485429bb95"
     },
     "belleza": {
-        "normal": "belleza_normal_fc1f6d42bd8f2f65930f97337ef3b527"
+        "normal": "belleza_normal_61cb13c772c24ca6fa685765172fdb50"
     },
     "bree serif": {
-        "normal": "bree_serif_normal_57704ab9ae0c946f2dd7819adf909f01"
+        "normal": "bree_serif_normal_a8ad0b7e5c8d0c390715f5b0c1e6874f"
     },
     "chewy": {
-        "normal": "chewy_normal_75d6b76ee50f325dc1f19b6a57940d89"
+        "normal": "chewy_normal_37a0d6be90474381af833ba9fe122894"
     },
     "dm serif display": {
-        "normal": "dm_serif_display_normal_c3648a0bf6520c01c72c4c30c5d674cc"
+        "normal": "dm_serif_display_normal_af549872d7bf6b9a13f2a1de2bd2ecfd"
     },
     "forum": {
-        "normal": "forum_normal_afbdd55760aaadd9d42381f7d464a394"
+        "normal": "forum_normal_bbe4127e7e4c0245256b00545bd29a98"
     },
     "great vibes": {
-        "normal": "great_vibes_normal_b71926faaf70df5552f9426aa9aac39a"
+        "normal": "great_vibes_normal_560623510fb2533d796f140c3ce203b9"
     },
     "hammersmith one": {
-        "normal": "hammersmith_one_normal_f870f8c83c231be3e309426419dd6574"
+        "normal": "hammersmith_one_normal_6d0f7b96c613fbd530d6f26eef277d92"
     },
     "inria serif": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/inria_serif_normal_cac903b5a29969b88d64c1f39260caea",
-        "bold": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/inria_serif_bold_99f73be35ef01c58ac4d294822c4f7fe",
-        "bold_italic": "inria_serif_bold_italic_16bb03d6f7f00b8acb7cfd6c749dee36"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/inria_serif_normal_64773d3f678f735c71b1bf73e471a32e",
+        "bold": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/inria_serif_bold_5bc2152b8743a7d2096369f4c16e42fe",
+        "bold_italic": "inria_serif_bold_italic_77ec217613f8fdde669f6117efaf7f0b"
     },
     "libre baskerville": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/libre_baskerville_normal_b22f8a7204eccff955e14518c76c2364",
-        "bold": "libre_baskerville_bold_ce48c9b8a75ee9f28f8daff12ebd9934"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/libre_baskerville_normal_3f6ee434e6a37ac39f5c8227dc4db821",
+        "bold": "libre_baskerville_bold_d01c763069f9d53eb1a45d686c4d74de"
     },
     "questrial": {
-        "normal": "questrial_normal_da4fb54c33de335b5123085b96ba929c"
+        "normal": "questrial_normal_59a833ef5e9e19de47457a607a281f27"
     },
     "shrikhand": {
-        "normal": "shrikhand_normal_d3cdaa63d006c388461b5d430b9f8e06"
+        "normal": "shrikhand_normal_0f938b141332663b5b8afda77b1b32ec"
     },
     "tenor sans": {
-        "normal": "tenor_sans_normal_9b190b329954a429b5b7e5a7fc167c03"
+        "normal": "tenor_sans_normal_81b9da98830c2c502639f9686da733bf"
     },
     "yeseva one": {
-        "normal": "yeseva_one_normal_8c1dced3a2e73db423b7638db71665a9"
+        "normal": "yeseva_one_normal_b3e4891d1a9a2d77cd2332257737e6ef"
     },
     "league spartan": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_normal_704c1ede67f6272a7088eee31fbc3300",
-        "500": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_500_04ec6375a2352b24874de555ae9d685e",
-        "600": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_600_0a1e5e113ce34d8d73cd25f84a87b7e3",
-        "bold": "league_spartan_bold_d8e1de1e77be000fb4723240ed1df461"
+        "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_normal_690a48927c91d4ede84b89389ca97a26",
+        "500": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_500_4e46b035ab44df5ea257bfbb12826286",
+        "600": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_600_c1008d1fd79c245d40213f45c448c336",
+        "bold": "league_spartan_bold_3504c2ae06ab1ac93e42a3deb80a4f4f"
     },
     "times new roman": {
-        "normal": "times_new_roman_normal_d1efef7dfe25f0f92079f23c05aeb93a"
+        "normal": "times_new_roman_normal_e9f1b2ebaf423432632345a37c0d19dd"
     },
     "helvetica": {
-        "normal": "helvetica_normal_1198a39e10624f89f2d8b984f53a3865",
+        "normal": "helvetica_normal_169498ea8c5b2d4e36c6a2f34ada80a4",
         "bold": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\vendor\\dompdf\\dompdf\/lib\/fonts\/Helvetica-Bold",
         "italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\vendor\\dompdf\\dompdf\/lib\/fonts\/Helvetica-Oblique",
         "bold_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\vendor\\dompdf\\dompdf\/lib\/fonts\/Helvetica-BoldOblique"
     },
     "georgia": {
-        "normal": "georgia_normal_dd47a7a93819fed02b98fb0c56b10fe4"
+        "normal": "georgia_normal_b532bd3d0b70be9ea3a96130c459167a"
     }
 }

@@ -17,51 +17,79 @@ class SertifikatTemplateController extends Controller
     private $pdfWidth = 842;    // A4 Landscape width
     private $pdfHeight = 595;   // A4 Landscape height
 
-    public function uploadImage(Request $request)
+public function uploadImage(Request $request)
     {
         try {
-            Log::info('Starting background image upload', [
+            // Menentukan nama input dan pesan sukses berdasarkan file yang diupload
+            if ($request->hasFile('background_image')) {
+                $inputName = 'background_image';
+                $successMessage = 'Background image uploaded successfully';
+            } elseif ($request->hasFile('element_image')) {
+                $inputName = 'element_image';
+                $successMessage = 'Element image uploaded successfully';
+            } else {
+                // Jika tidak ada file yang dikirim, kembalikan error
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No image file found in the request.'
+                ], 400);
+            }
+
+            Log::info('Starting image upload', [
                 'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
+                'user_agent' => $request->userAgent(),
+                'input_name' => $inputName
             ]);
 
+            // Validasi file yang sesuai
             $request->validate([
-                'background_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+                $inputName => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
 
-            $file = $request->file('background_image');
+            $file = $request->file($inputName);
             Log::info('File details', [
                 'original_name' => $file->getClientOriginalName(),
                 'size' => $file->getSize(),
                 'mime_type' => $file->getMimeType()
             ]);
 
+            // Logika penyimpanan file (tetap sama)
             $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('certificates', $filename, 'public');
-
             $url = '/storage/' . $path;
-            Log::info('Background image uploaded successfully', [
+
+            Log::info('Image uploaded successfully', [
                 'path' => $path,
                 'public_url' => $url
             ]);
 
+            // Mengembalikan response dengan pesan yang dinamis
             return response()->json([
                 'status' => 'success',
                 'url' => $url,
-                'message' => 'Background image uploaded successfully'
+                'message' => $successMessage
             ]);
 
+        } catch (ValidationException $e) {
+            // Error khusus untuk validasi
+            Log::error('Image upload validation failed', ['errors' => $e->errors()]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal: ' . $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
+
         } catch (\Exception $e) {
-            Log::error('Error uploading background image', [
+            // Error umum lainnya
+            Log::error('Error uploading image', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengupload background: ' . $e->getMessage()
+                'message' => 'Gagal mengupload gambar: ' . $e->getMessage()
             ], 500);
         }
     }
