@@ -26,6 +26,12 @@ return new class extends Migration
                   ->on('data_activity_types')
                   ->constrained();
             $table->text('description')->nullable();
+            $table->dateTime('date')->nullable();
+            $table->foreignId('instruktur_id')->nullable()->constrained('instrukturs');
+            $table->time('time_start')->nullable();
+            $table->time('time_end')->nullable();
+            $table->unsignedBigInteger('sertifikat_id')->nullable()->after('instruktur_id');
+            $table->foreign('sertifikat_id')->references('id')->on('sertifikats')->onDelete('set null');
             $table->timestamps();
         });
     }
@@ -35,6 +41,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('data_activity', function (Blueprint $table) {
+            $table->dropForeign(['instruktur_id']);
+            $table->dropColumn('instruktur_id');
+            $table->dropColumn('time_start');
+            $table->dropColumn('time_end');
+            $table->dropForeign(['sertifikat_id']);
+            $table->dropColumn('sertifikat_id');
+        });
+        
+        Schema::dropIfExists('data_activity');
+        Schema::dropIfExists('data_activity_types');
     }
 };

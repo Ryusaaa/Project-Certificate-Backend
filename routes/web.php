@@ -4,14 +4,15 @@ use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\UserApiController;
 use App\Http\Controllers\RoleController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DataActivity\DataActivityController;
 use App\Http\Controllers\DataActivity\DataActivityTypeController;
 use App\Http\Controllers\Instruktur\LoginInstrukturController;
 use App\Http\Controllers\Instruktur\InstrukturManagementController;
 use App\Http\Controllers\Sertifikat\SertifikatTemplateController;
 use App\Http\Controllers\Sertifikat\SertifikatPesertaController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,11 +57,22 @@ Route::delete('admins/delete/{admin}', [UserApiController::class, 'destroy']);
 Route::prefix('sertifikat-templates')->group(function () {
     Route::get('/', [SertifikatTemplateController::class, 'index']);
     Route::post('/', [SertifikatTemplateController::class, 'store']);
+    Route::get('/editor', function () {
+        return view('sertifikat.editor'); // Pastikan ada view sertifikat/editor.blade.php
+    });
     Route::get('/{id}', [SertifikatTemplateController::class, 'show']);
     Route::put('/{id}', [SertifikatTemplateController::class, 'update']);
     Route::delete('/{id}', [SertifikatTemplateController::class, 'destroy']);
     
     Route::post('/upload-image', [SertifikatTemplateController::class, 'uploadImage']);
+
+    Route::prefix('sertifikat-templates/{id}')->group(function () {
+        Route::get('/shapes', [SertifikatTemplateController::class, 'getShapes']);
+        Route::post('/shapes', [SertifikatTemplateController::class, 'addShape']);
+        Route::put('/shapes/{shapeId}', [SertifikatTemplateController::class, 'updateShape']);
+        Route::delete('/shapes/{shapeId}', [SertifikatTemplateController::class, 'deleteShape']);
+        Route::post('/shapes/update-order', [SertifikatTemplateController::class, 'updateShapesOrder']);
+    });
     
     // PDF related routes
     Route::post('/{id}/preview-template', [SertifikatPesertaController::class, 'previewPDF']);
@@ -73,8 +85,8 @@ Route::prefix('sertifikat-templates')->group(function () {
 
 
 // --- DEBUG & FALLBACK ROUTES ---
-Route::get('/debug-cors', function (\Illuminate\Http\Request $request) {
-    \Illuminate\Support\Facades\Log::debug('DEBUG GET CORS HIT', [
+Route::get('/debug-cors', function (Request $request) {
+    Log::debug('DEBUG GET CORS HIT', [
         'Origin' => $request->headers->get('Origin'),
         'Headers' => $request->headers->all(),
     ]);
