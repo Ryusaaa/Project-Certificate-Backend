@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToMerchant;
 
 class Sertifikat extends Model
 {
+    use BelongsToMerchant;
     protected $fillable = [
         'name',
         'background_image',

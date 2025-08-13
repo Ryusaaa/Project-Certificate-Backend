@@ -4,13 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToMerchant;
 
 class DataActivity extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToMerchant;
     
-    // Sebaiknya gunakan nama tabel plural sesuai konvensi Laravel: 'data_activities'
-    // Jika Anda tetap ingin menggunakan 'data_activity', pastikan tidak ada masalah di tempat lain.
     protected $table = 'data_activity';
 
     protected $fillable = [

@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToMerchant;
 
 class UserCertificate extends Model
 {
+    use BelongsToMerchant;
     protected $fillable = [
         'user_id',
         'certificate_download_id',
