@@ -83,7 +83,8 @@ class SertifikatTemplateController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'background_image' => 'required|string',
-                'elements' => 'required|array'
+                'elements' => 'required|array',
+                'certificate_number_format' => 'nullable|string'
             ]);
 
             // Clean background image URL to path
@@ -97,11 +98,20 @@ class SertifikatTemplateController extends Controller
                 throw new \Exception('Background image not found');
             }
 
+            // Validate certificate number format if provided
+            if (!empty($validated['certificate_number_format'])) {
+                if (!preg_match('/X+/', $validated['certificate_number_format'])) {
+                    throw new \Exception('Format nomor sertifikat harus mengandung minimal satu X sebagai placeholder nomor');
+                }
+            }
+
             // Create template
             $template = new Sertifikat();
             $template->name = $validated['name'];
             $template->background_image = $background_image;
             $template->elements = $this->processElements($validated['elements']);
+            $template->certificate_number_format = $validated['certificate_number_format'] ?? null;
+            $template->last_certificate_number = 0;
             $template->layout = [
                 'width' => $this->pdfWidth,
                 'height' => $this->pdfHeight,
@@ -151,7 +161,8 @@ class SertifikatTemplateController extends Controller
             $validated = $request->validate([
                 'name' => 'sometimes|required|string|max:255',
                 'background_image' => 'sometimes|required|string',
-                'elements' => 'sometimes|required|array'
+                'elements' => 'sometimes|required|array',
+                'certificate_number_format' => 'sometimes|nullable|string'
             ]);
 
             if (isset($validated['background_image'])) {
@@ -165,6 +176,14 @@ class SertifikatTemplateController extends Controller
 
             if (isset($validated['elements'])) {
                 $validated['elements'] = $this->processElements($validated['elements']);
+            }
+
+            // Validate certificate number format if provided
+            if (isset($validated['certificate_number_format'])) {
+                if ($validated['certificate_number_format'] !== null && 
+                    !preg_match('/X+/', $validated['certificate_number_format'])) {
+                    throw new \Exception('Format nomor sertifikat harus mengandung minimal satu X sebagai placeholder nomor');
+                }
             }
 
             $template->update($validated);

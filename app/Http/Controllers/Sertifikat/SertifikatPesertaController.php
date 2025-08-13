@@ -7,9 +7,11 @@ use App\Models\Sertifikat;
 use App\Models\CertificateDownload;
 use App\Models\UserCertificate;
 use App\Models\User;
+use App\Mail\CertificateGenerated;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -177,6 +179,51 @@ class SertifikatPesertaController extends Controller
         }, $elements);
     }
 
+    private function generateCertificateNumber($template, $format = null) 
+    {
+        try {
+            // Use template's format if no format provided
+            $format = $format ?? $template->certificate_number_format;
+            
+            if (empty($format)) {
+                throw new \Exception('Format nomor sertifikat belum diatur');
+            }
+
+            // Find all groups of X's in the format
+            preg_match_all('/X+/', $format, $matches, PREG_OFFSET_CAPTURE);
+            
+            if (empty($matches[0])) {
+                throw new \Exception('Format harus mengandung minimal satu X sebagai placeholder nomor');
+            }
+
+            // Get the first sequence of X's as the increment placeholder
+            $placeholder = $matches[0][0][0];
+            $placeholderLength = strlen($placeholder);
+
+            // Create a pattern that matches only the first X sequence
+            $pattern = '/^' . str_repeat('X', $placeholderLength) . '/';
+            
+            // Get next number from template
+            $nextNumber = $template->last_certificate_number + 1;
+            
+            // Update the last number in template
+            $template->update([
+                'last_certificate_number' => $nextNumber
+            ]);
+
+            // Format the number with leading zeros based on first X sequence length
+            $formattedNumber = str_pad($nextNumber, $placeholderLength, '0', STR_PAD_LEFT);
+            
+            // Replace only the first sequence of X's with the number
+            $certificateNumber = preg_replace($pattern, $formattedNumber, $format, 1);
+
+            return $certificateNumber;
+        } catch (\Exception $e) {
+            Log::error('Error generating certificate number: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
     public function downloadPDF($token)
     {
         try {
@@ -283,9 +330,9 @@ class SertifikatPesertaController extends Controller
             $validated = $request->validate([
                 'recipients' => 'required|array|min:1',
                 'recipients.*.recipient_name' => 'required|string',
-                'recipients.*.certificate_number' => 'required|string',
                 'recipients.*.date' => 'required|date',
-                'recipients.*.email' => 'required|email' // tambah validasi email
+                'recipients.*.email' => 'required|email',
+                'certificate_number_format' => 'nullable|string' // Format nomor bisa dari request atau template
             ]);
 
             // Get template
@@ -305,10 +352,13 @@ class SertifikatPesertaController extends Controller
                 Carbon::setLocale('id');
                 $dateText = Carbon::parse($recipient['date'])->translatedFormat('d F Y');
 
+                // Generate certificate number
+                $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format']);
+
                 // Process template elements for each recipient
                 $elements = $this->prepareElements($template->elements, [
                     '{NAMA}' => $recipient['recipient_name'],
-                    '{NOMOR}' => $recipient['certificate_number'],
+                    '{NOMOR}' => $certificateNumber,
                     '{TANGGAL}' => $dateText
                 ]);
 
@@ -362,13 +412,31 @@ class SertifikatPesertaController extends Controller
                     \Illuminate\Support\Facades\Log::warning('User not found for email: ' . $recipient['email']);
                 }
 
+                // Send email with certificate
+                try {
+                    Mail::to($recipient['email'])->send(
+                        new CertificateGenerated(
+                            $recipient['recipient_name'],
+                            $recipient['certificate_number'],
+                            '/sertifikat-templates/download/' . $downloadToken,
+                            $pdf->output()
+                        )
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Failed to send certificate email', [
+                        'recipient' => $recipient['email'],
+                        'error' => $e->getMessage()
+                    ]);
+                }
+
                 // Add to generated PDFs array
                 $generatedPDFs[] = [
                     'recipient_name' => $recipient['recipient_name'],
                     'certificate_number' => $recipient['certificate_number'],
                     'view_url' => '/storage/' . $pdfPath,
                     'download_url' => '/sertifikat-templates/download/' . $downloadToken,
-                    'download_token' => $downloadToken
+                    'download_token' => $downloadToken,
+                    'email_sent' => true
                 ];
             }
 
