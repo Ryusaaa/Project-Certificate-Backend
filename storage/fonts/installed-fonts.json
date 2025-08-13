@@ -1,6 +1,5 @@
 {
     "playfair display": {
-<<<<<<< HEAD
         "normal": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_normal_3e00b387ac65a0de2f97ca0e656b9258",
         "500": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_1077f2ec77264596674de6a16ed0fea6",
         "500_italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_500_italic_3b8ab0beb2c305c5ac280ac1060f67b2",
@@ -119,7 +118,7 @@
         "600": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_ba1814bf25eaa106ac8bce7dc4173677",
         "600_italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_italic_9e65f96ff31afd3eabd64161b2e644b5",
         "bold": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_7bc4d8fb38b09660da7dff4b707b3536",
-        "bold_italic": "poppins_bold_italic_4a885808007b2bd362cf322aade0b84f"
+        "bold_italic": "poppins_bold_italic_4a885808007b2bd362cf322aade0b84f",
     },
     "alice": {
         "normal": "alice_normal_472c9d335256b4fb848bcb85eb308966"
@@ -202,20 +201,15 @@
         "bold": "league_spartan_bold_8b93d283e1cf697df58d3a3af43ee1f4"
     },
     "times new roman": {
-        "normal": "times_new_roman_normal_0083dcd8744ae770e509cd3734e60067"
+        "normal": "times_new_roman_normal_861586e3263718735b836ce691bef7aa"
     },
     "helvetica": {
         "normal": "helvetica_normal_826118d8933c76cd78effab33c1a8a2b",
->>>>>>> 9755e3a (refactor: few file)
         "bold": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\vendor\\dompdf\\dompdf\/lib\/fonts\/Helvetica-Bold",
         "italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\vendor\\dompdf\\dompdf\/lib\/fonts\/Helvetica-Oblique",
         "bold_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\vendor\\dompdf\\dompdf\/lib\/fonts\/Helvetica-BoldOblique"
     },
     "georgia": {
-<<<<<<< HEAD
-        "normal": "georgia_normal_b532bd3d0b70be9ea3a96130c459167a"
-=======
         "normal": "georgia_normal_ddba0eb790d7b886c46c10f10897dd2b"
->>>>>>> 9755e3a (refactor: few file)
     }
 }

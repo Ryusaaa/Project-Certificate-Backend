@@ -13,7 +13,9 @@ class Sertifikat extends Model
         'background_image',
         'layout',
         'elements',
-        'is_active'
+        'is_active',
+        'certificate_number_format',
+        'last_certificate_number'
     ];
 
     protected $casts = [
