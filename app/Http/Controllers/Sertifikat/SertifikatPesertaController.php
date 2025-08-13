@@ -383,7 +383,7 @@ class SertifikatPesertaController extends Controller
                     now()->format('Ymd_His')
                 );
                 
-                $downloadToken = Str::random(64); // Generate secure token
+                $downloadToken = Str::random(12); // Generate secure token
                 
                 // Save to storage
                 $pdfPath = 'certificates/generated/' . $filename;
@@ -400,16 +400,16 @@ class SertifikatPesertaController extends Controller
                 ]);
 
                 // Find user by email and assign certificate
-                $user = \App\Models\User::where('email', $recipient['email'])->first();
+                $user = User::where('email', $recipient['email'])->first();
                 if ($user) {
-                    \App\Models\UserCertificate::create([
+                    UserCertificate::create([
                         'user_id' => $user->id,
                         'certificate_download_id' => $download->id,
                         'assigned_at' => now(),
                         'status' => 'active'
                     ]);
                 } else {
-                    \Illuminate\Support\Facades\Log::warning('User not found for email: ' . $recipient['email']);
+                    Log::warning('User not found for email: ' . $recipient['email']);
                 }
 
                 // Send email with certificate
@@ -459,7 +459,7 @@ class SertifikatPesertaController extends Controller
     {
         try {
             // Check if user exists
-            $user = \App\Models\User::find($id);
+            $user = User::find($id);
             if (!$user) {
                 return response()->json([
                     'status' => 'error',
@@ -468,7 +468,7 @@ class SertifikatPesertaController extends Controller
             }
             
             // Get certificates from UserCertificate with the download tokens
-            $certificates = \App\Models\UserCertificate::with('certificateDownload')
+            $certificates = UserCertificate::with('certificateDownload')
                 ->where('user_id', $id)
                 ->where('status', 'active')
                 ->get()

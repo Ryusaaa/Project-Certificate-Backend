@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToMerchant;
 
 class UserCertificate extends Model
 {
+    use BelongsToMerchant;
     protected $fillable = [
         'user_id',
         'certificate_download_id',
@@ -30,7 +32,7 @@ class UserCertificate extends Model
      */
     public function certificateDownload()
     {
-        return $this->belongsTo(CertificateDownload::class);
+        return $this->belongsTo(CertificateDownload::class, 'certificate_download_id');
     }
 
     /**

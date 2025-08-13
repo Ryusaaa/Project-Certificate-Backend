@@ -21,6 +21,7 @@ class Admin extends Authenticatable
         'email',
         'password',
         'role_id',
+        'merchant_id'
     ];
 
     protected $hidden = [
@@ -35,5 +36,10 @@ class Admin extends Authenticatable
     public function role() 
     {
         return $this->belongsTo(Role::class, 'role_id');  
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class, 'merchant_id');
     }
 }

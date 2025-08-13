@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToMerchant;
 
 class Sertifikat extends Model
 {
+    use BelongsToMerchant;
     protected $fillable = [
         'name',
         'background_image',
@@ -17,9 +19,10 @@ class Sertifikat extends Model
     ];
 
     protected $casts = [
+        'id' => 'integer',
         'layout' => 'array',
         'elements' => 'array',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
     public $timestamps = true;

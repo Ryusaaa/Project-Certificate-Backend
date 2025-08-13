@@ -212,14 +212,13 @@ class UserController extends Controller
                     'email'          => $email,
                     'no_hp'          => $nomorHpFormatted,
                     'asal_institusi' => $row[3] ?? null,
-                    'password'       => Hash::make($row[4] ?? 'password'),
+                    // 'password'       => Hash::make('password'),
                     'role_id'        => 3,
                     'activity_id'    => $activityId,
                 ];
 
-                // Validasi nama dan password
-                if (empty($pesertaData['name']) || empty($row[4])) {
-                    $errors[] = "Baris {$rowNumber}: Nama atau password tidak boleh kosong.";
+                if (empty($pesertaData['name'])) {
+                    $errors[] = "Baris {$rowNumber}: Nama tidak boleh kosong.";
                     continue;
                 }
 
