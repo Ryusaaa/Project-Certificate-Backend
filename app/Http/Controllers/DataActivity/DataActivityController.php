@@ -7,6 +7,8 @@ use App\Models\DataActivity;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Sertifikat;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DataActivityController extends Controller
 {
@@ -262,5 +264,152 @@ class DataActivityController extends Controller
         $dataActivity->delete();
 
         return response()->json(['message' => 'Data kegiatan berhasil dihapus.'], 200);
+    }
+
+    public function attachTemplates(Request $request, $activityId)
+    {
+        try {
+            $validated = $request->validate([
+                'sertifikat_ids' => 'required|array',
+                'sertifikat_ids.*' => 'exists:sertifikats,id'
+            ]);
+
+            $dataActivity = DataActivity::findOrFail($activityId);
+            
+            // Attach templates with pending status
+            foreach ($validated['sertifikat_ids'] as $templateId) {
+                $dataActivity->sertifikat()->attach($templateId, [
+                    'status' => 'pending',
+                    'is_active' => false
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Templates attached successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error attaching templates: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Menampilkan semua template yang terpasang pada data activity
+     */
+    public function listTemplates($activityId)
+    {
+        try {
+            $dataActivity = DataActivity::findOrFail($activityId);
+            
+            $templates = $dataActivity->sertifikat()
+                ->with(['downloads']) // Include any needed relations
+                ->get()
+                ->map(function ($template) {
+                    return [
+                        'id' => $template->id,
+                        'name' => $template->name,
+                        'background_image' => $template->background_image,
+                        'status' => $template->pivot->status,
+                        'is_active' => $template->pivot->is_active,
+                        'preview_url' => $template->background_image, // Adjust based on your preview logic
+                        'created_at' => $template->pivot->created_at
+                    ];
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $templates
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error listing templates: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approve template and reject others
+     */
+    public function approveTemplate(Request $request, $activityId)
+    {
+        try {
+            $validated = $request->validate([
+                'sertifikat_id' => 'required|exists:sertifikats,id'
+            ]);
+
+            DB::beginTransaction();
+
+            $dataActivity = DataActivity::findOrFail($activityId);
+            
+            // Set all templates to rejected first
+            $dataActivity->sertifikat()->updateExistingPivot(
+                $dataActivity->sertifikat()->pluck('sertifikats.id'),
+                ['status' => 'rejected', 'is_active' => false]
+            );
+
+            // Set the chosen template as approved and active
+            $dataActivity->sertifikat()->updateExistingPivot(
+                $validated['sertifikat_id'],
+                ['status' => 'approved', 'is_active' => true]
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Template approved successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error approving template: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pending templates for instructor approval
+     */
+    public function getPendingTemplates($activityId)
+    {
+        try {
+            $dataActivity = DataActivity::findOrFail($activityId);
+            
+            $templates = $dataActivity->sertifikat()
+                ->wherePivot('status', 'pending')
+                ->get()
+                ->map(function ($template) {
+                    return [
+                        'id' => $template->id,
+                        'name' => $template->name,
+                        'background_image' => $template->background_image,
+                        'preview_url' => $template->background_image, // Adjust based on your preview logic
+                        'created_at' => $template->pivot->created_at
+                    ];
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $templates
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting pending templates: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

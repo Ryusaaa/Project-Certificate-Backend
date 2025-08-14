@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| Web Routes
 |--------------------------------------------------------------------------
 */
 
@@ -27,6 +27,16 @@ Route::get('data-activities/certificate-templates', [DataActivityController::cla
 Route::post('data-activities/{id}/import', [UserController::class, 'import']);
 Route::post('data-activities/{id}/users', [UserController::class, 'inputUserDataActivity']);
 Route::post('data-activities/{id}/set-template', [DataActivityController::class, 'setCertificateTemplate']);
+
+// DataActivity Template Routes
+Route::prefix('data-activities')->group(function () {
+    Route::prefix('{activityId}/templates')->group(function () {
+        Route::post('attach', [DataActivityController::class, 'attachTemplates']);
+        Route::get('list', [DataActivityController::class, 'listTemplates']);
+        Route::get('pending', [DataActivityController::class, 'getPendingTemplates']);
+        Route::post('approve', [DataActivityController::class, 'approveTemplate']);
+    });
+});
 // Route::resource menangani index, store, show, update, destroy secara otomatis.
 Route::resource('data-activities', DataActivityController::class);
 Route::resource('data-activity-types', DataActivityTypeController::class);
