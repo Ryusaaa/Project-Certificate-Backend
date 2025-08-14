@@ -18,6 +18,8 @@ return new class extends Migration
             $table->longText('layout')->nullable();    // Layout dalam format JSON
             $table->longText('elements')->nullable();  // Elemen-elemen dalam format JSON
             $table->boolean('is_active')->default(true);
+            $table->string('certificate_number_format')->nullable()->after('background_image');
+            $table->unsignedBigInteger('last_certificate_number')->default(0)->after('certificate_number_format');
             $table->timestamps();
             
         });
@@ -29,5 +31,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('sertifikats');
+        Schema::table('sertifikats', function (Blueprint $table) {
+            $table->dropColumn('certificate_number_format');
+            $table->dropColumn('last_certificate_number');
+        });
+        
     }
 };

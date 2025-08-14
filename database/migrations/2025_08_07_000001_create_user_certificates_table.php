@@ -16,6 +16,9 @@ return new class extends Migration
             $table->timestamp('assigned_at');
             $table->timestamps();
 
+            $table->string('unique_code')->unique()->nullable()->after('id');
+            $table->string('qrcode_path')->nullable()->after('unique_code');
+
             // Memastikan satu user hanya memiliki satu record untuk satu sertifikat
             $table->unique(['user_id', 'certificate_download_id']);
         });
@@ -24,5 +27,9 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('user_certificates');
+        Schema::table('user_certificates', function (Blueprint $table) {
+            $table->dropColumn('unique_code');
+            $table->dropColumn('qrcode_path');
+        });
     }
 };

@@ -109,7 +109,7 @@ class SertifikatTemplateController extends Controller
             // Create template
             $template = new Sertifikat();
             $template->name = $validated['name'];
-            $template->background_image = $background_image;
+            $template->background_image = $background_path;
             $template->elements = $this->processElements($validated['elements']);
             $template->layout = [
                 'width' => $this->pdfWidth,
