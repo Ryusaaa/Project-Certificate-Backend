@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Models\CertificateDownload;
 
 class UserCertificate extends Model
 {
@@ -17,7 +18,6 @@ class UserCertificate extends Model
         'certificate_download_id',
         'status',
         'assigned_at',
-        'unique_code',
         'qrcode_path',
         'merchant_id'
     ];
@@ -33,14 +33,20 @@ class UserCertificate extends Model
         static::creating(function ($userCertificate) {
             Log::info('UserCertificate creating event fired.');
 
-            $userCertificate->unique_code = (string) Str::uuid();
-            Log::info('Unique code generated: ' . $userCertificate->unique_code);
+            // Get the token from CertificateDownload
+            $certificateDownload = CertificateDownload::find($userCertificate->certificate_download_id);
+            $token = $certificateDownload ? $certificateDownload->token : null;
 
-            // Generate QR Code
-            $qrCodeContent = config('app.url') . '/certificates/' . $userCertificate->unique_code;
+            if (!$token) {
+                Log::error('No token found for certificate_download_id: ' . $userCertificate->certificate_download_id);
+                return;
+            }
+
+            // Generate QR Code with token
+            $qrCodeContent = config('app.url') . '/sertifikat-templates/download/' . $token;
             Log::info('QR Code Content: ' . $qrCodeContent);
 
-            $qrCodeFileName = 'qrcodes/' . $userCertificate->unique_code . '.svg';
+            $qrCodeFileName = 'qrcodes/' . $token . '.svg';
             Log::info('QR Code File Name: ' . $qrCodeFileName);
 
             try {

@@ -289,7 +289,6 @@
         }
 
         /* Custom Fonts */
-
         @foreach($fonts as $fontFamily => $font)
             @foreach($weights as $weightInfo)
                 /* {{ $fontFamily }} - {{ $weightInfo['name'] }} */

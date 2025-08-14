@@ -335,7 +335,7 @@ class SertifikatPesertaController extends Controller
                 'recipients.*.date' => 'required|date',
                 'recipients.*.email' => 'required|email',
                 'certificate_number_format' => 'nullable|string',
-                'merchant_id' => 'required|exists:merchants,id'
+                'merchant_id' => 'required'
             ]);
 
             // Get template
@@ -356,7 +356,7 @@ class SertifikatPesertaController extends Controller
                 $dateText = Carbon::parse($recipient['date'])->translatedFormat('d F Y');
 
                 // Generate certificate number
-                $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format']);
+                $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format'] ?? null);
 
                 // Process template elements for each recipient
                 $elements = $this->prepareElements($template->elements, [
@@ -374,7 +374,7 @@ class SertifikatPesertaController extends Controller
                     'pageHeight' => $this->pdfHeight
                 ];
 
-                // Generate PDF for each recipient
+                // Generate PDF
                 $pdf = PDF::loadView('sertifikat.template', $data)
                          ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
 
@@ -382,7 +382,7 @@ class SertifikatPesertaController extends Controller
                 $filename = sprintf(
                     'sertifikat_%s_%s_%s.pdf',
                     Str::slug($recipient['recipient_name']),
-                    Str::slug($recipient['certificate_number']),
+                    Str::slug($certificateNumber), // Changed from recipient['certificate_number']
                     now()->format('Ymd_His')
                 );
                 
@@ -397,7 +397,7 @@ class SertifikatPesertaController extends Controller
                     'token' => $downloadToken,
                     'filename' => $filename,
                     'recipient_name' => $recipient['recipient_name'],
-                    'certificate_number' => $recipient['certificate_number'],
+                    'certificate_number' => $certificateNumber,
                     'user_id' => $request->user() ? $request->user()->id : null,
                     'expires_at' => now()->addDays(30) // Token berlaku 30 hari
                 ]);
@@ -420,7 +420,7 @@ class SertifikatPesertaController extends Controller
                     Mail::to($recipient['email'])->send(
                         new CertificateGenerated(
                             $recipient['recipient_name'],
-                            $recipient['certificate_number'],
+                            $certificateNumber,
                             '/sertifikat-templates/download/' . $downloadToken,
                             $pdf->output()
                         )
@@ -435,7 +435,7 @@ class SertifikatPesertaController extends Controller
                 // Add to generated PDFs array
                 $generatedPDFs[] = [
                     'recipient_name' => $recipient['recipient_name'],
-                    'certificate_number' => $recipient['certificate_number'],
+                    'certificate_number' => $certificateNumber,
                     'view_url' => '/storage/' . $pdfPath,
                     'download_url' => '/sertifikat-templates/download/' . $downloadToken,
                     'download_token' => $downloadToken,
