@@ -218,7 +218,9 @@ class SertifikatTemplateController extends Controller
             $template = Sertifikat::findOrFail($id);
 
             $validated = $request->validate([
-                'type' => [Rule::in(['line', 'square', 'circle', 'rectangle'])],
+                'type' => [\Illuminate\Validation\Rule::in([
+                    'rectangle', 'circle', 'triangle', 'star', 'diamond', 'pentagon', 'hexagon', 'line', 'arrow', 'heart', 'cross'
+                ])],
                 'x' => 'numeric',
                 'y' => 'numeric', 
                 'width' => 'numeric|min:1',
@@ -458,17 +460,26 @@ class SertifikatTemplateController extends Controller
                     ], $element['font']);
                 }
 
-                // Font validation logic (existing)...
-                $allowedWeights = ['400', '500', '600', '700'];
+                $allowedWeights = ['normal', '400', '500', '600', '700', 'bold'];
                 $allowedFonts = [
-                    'Times New Roman', 'Arial', 'Helvetica', 'Georgia',
-                    'Montserrat', 'Playfair Display', 'Poppins', 'Alice', 'Allura'
+                    // System
+                    'Arial', 'Times New Roman', 'Helvetica', 'Georgia', 'Verdana', 'Courier New',
+                    // Sans-Serif
+                    'Inter', 'Poppins', 'Montserrat', 'Open Sans', 'League Spartan', 'DM Sans', 'Oswald', 'Barlow',
+                    // Serif
+                    'Playfair Display', 'Merriweather', 'Libre Baskerville', 'Lora', 'Bree Serif', 'DM Serif Display',
+                    // Decorative
+                    'Alice', 'Allura', 'Great Vibes', 'Dancing Script', 'Brittany', 'Breathing', 'Brighter', 'Bryndan Write', 'Caitlin Angelica', 'Railey', 'More Sugar',
+                    // Display
+                    'Bebas Neue', 'Anton', 'Archivo Black', 'Fredoka One'
                 ];
 
-                if (!in_array($element['font']['weight'], $allowedWeights)) {
+                // Normalisasi font weight
+                if (!in_array(strval($element['font']['weight']), $allowedWeights)) {
                     $element['font']['weight'] = '400';
                 }
 
+                // Normalisasi font family
                 if (!in_array($element['font']['family'], $allowedFonts)) {
                     $element['font']['family'] = 'Arial';
                 }
@@ -501,9 +512,11 @@ class SertifikatTemplateController extends Controller
             if ($element['type'] === 'shape') {
                 // Ensure shape has required properties
                 $element['shapeType'] = $element['shapeType'] ?? 'rectangle';
-                
-                // Validate shape type
-                $allowedShapes = ['line', 'square', 'circle', 'rectangle'];
+
+                // Validate shape type - now supports all frontend shapes
+                $allowedShapes = [
+                    'rectangle', 'circle', 'triangle', 'star', 'diamond', 'pentagon', 'hexagon', 'line', 'arrow', 'heart', 'cross'
+                ];
                 if (!in_array($element['shapeType'], $allowedShapes)) {
                     $element['shapeType'] = 'rectangle';
                 }
