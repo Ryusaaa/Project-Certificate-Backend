@@ -12,7 +12,7 @@ class InstrukturManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Instruktur::query();
+        $query = Instruktur::with(['merchant']);
 
         // SEARCH - Case insensitive search on instructor name and email
         if ($search = $request->input('search')) {
@@ -39,6 +39,8 @@ class InstrukturManagementController extends Controller
                 'name' => $item->name,
                 'email' => $item->email,
                 'role_id' => $item->role_id,
+                'merchant_id' => $item->merchant_id,
+                'merchant' => $item->merchant
             ];
         });
 
@@ -73,11 +75,15 @@ class InstrukturManagementController extends Controller
             ]);
         
 
+        // Get merchant_id dari user yang sedang login
+        $merchant_id = auth('sanctum')->user()->merchant_id ?? 1;
+
         $instruktur = Instruktur::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role_id' => '2'
+            'role_id' => '2',
+            'merchant_id' => $merchant_id
         ]);
 
         return response()->json($instruktur, 201);

@@ -19,6 +19,7 @@ class InstrukturSeeder extends Seeder
             'email' => 'instruktur@example.com',
             'password' => Hash::make('password'),
             'role_id' => 2,
+            'merchant_id' => 1,
         ]);
     }
 }

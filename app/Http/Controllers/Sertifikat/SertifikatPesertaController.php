@@ -29,7 +29,8 @@ class SertifikatPesertaController extends Controller
             $validated = $request->validate([
                 'recipient_name' => 'required|string',
                 'certificate_number' => 'required|string',
-                'date' => 'required|date'
+                'date' => 'required|date',
+                'merchant_id' => 'required|exists:merchants,id'
             ]);
 
             // Get template
@@ -111,7 +112,8 @@ class SertifikatPesertaController extends Controller
             $validated = $request->validate([
                 'recipient_name' => 'required|string',
                 'certificate_number' => 'required|string',
-                'date' => 'required|date'
+                'date' => 'required|date',
+                'merchant_id' => 'required|exists:merchants,id'
             ]);
 
             // Get template
@@ -332,7 +334,8 @@ class SertifikatPesertaController extends Controller
                 'recipients.*.recipient_name' => 'required|string',
                 'recipients.*.date' => 'required|date',
                 'recipients.*.email' => 'required|email',
-                'certificate_number_format' => 'nullable|string' // Format nomor bisa dari request atau template
+                'certificate_number_format' => 'nullable|string',
+                'merchant_id' => 'required|exists:merchants,id'
             ]);
 
             // Get template
@@ -487,7 +490,8 @@ class SertifikatPesertaController extends Controller
                         'download_token' => $download->token,
                         'expires_at' => $download->expires_at,
                         'assigned_at' => $userCertificate->created_at,
-                        'status' => $userCertificate->status
+                        'status' => $userCertificate->status,
+                        'merchant_id' => $userCertificate->merchant_id
                     ];
                 })
                 ->filter() // Remove any null values

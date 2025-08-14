@@ -15,7 +15,8 @@ class Sertifikat extends Model
         'elements',
         'is_active',
         'certificate_number_format',
-        'last_certificate_number'
+        'last_certificate_number',
+        'merchant_id'
     ];
 
     protected $casts = [

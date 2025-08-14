@@ -81,11 +81,15 @@ class UserApiController extends Controller
             return response()->json(['message' => 'Validation failed', 'error' => $e->getMessage()], 422);
         }
 
+        // Get merchant_id dari admin yang sedang login
+        $merchant_id = auth('sanctum')->user()->merchant_id ?? 1; 
+
         $admin = Admin::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role_id' => '1'
+            'role_id' => '1',
+            'merchant_id' => $merchant_id
         ]);
 
         return response()->json([

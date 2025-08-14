@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\BelongsToMerchant;
+use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class UserCertificate extends Model
 {
@@ -12,12 +16,51 @@ class UserCertificate extends Model
         'user_id',
         'certificate_download_id',
         'status',
-        'assigned_at'
+        'assigned_at',
+        'unique_code',
+        'qrcode_path',
+        'merchant_id'
     ];
 
     protected $casts = [
         'assigned_at' => 'datetime'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($userCertificate) {
+            Log::info('UserCertificate creating event fired.');
+
+            $userCertificate->unique_code = (string) Str::uuid();
+            Log::info('Unique code generated: ' . $userCertificate->unique_code);
+
+            // Generate QR Code
+            $qrCodeContent = config('app.url') . '/certificates/' . $userCertificate->unique_code;
+            Log::info('QR Code Content: ' . $qrCodeContent);
+
+            $qrCodeFileName = 'qrcodes/' . $userCertificate->unique_code . '.svg';
+            Log::info('QR Code File Name: ' . $qrCodeFileName);
+
+            try {
+                // Ensure the directory exists
+                Storage::disk('public')->makeDirectory('qrcodes');
+                Log::info('QR Code directory ensured.');
+
+                $qrCodeSvg = QrCode::size(200)->generate($qrCodeContent);
+                Log::info('QR Code SVG generated (first 50 chars): ' . substr($qrCodeSvg, 0, 50));
+
+                Storage::disk('public')->put($qrCodeFileName, $qrCodeSvg);
+                Log::info('QR Code file saved to: ' . $qrCodeFileName);
+
+                $userCertificate->qrcode_path = 'storage/' . $qrCodeFileName;
+                Log::info('QR Code path set on model: ' . $userCertificate->qrcode_path);
+            } catch (\Exception $e) {
+                Log::error('Error generating or saving QR Code: ' . $e->getMessage());
+            }
+        });
+    }
 
     /**
      * Get the user that owns this certificate.

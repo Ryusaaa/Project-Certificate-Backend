@@ -32,7 +32,7 @@ class LoginController extends Controller
             ]);
 
             // Cek email ada atau tidak
-            $admin = Admin::where('email', $request->email)->with('role')->first();
+            $admin = Admin::where('email', $request->email)->with(['role', 'merchant'])->first();
             if (!$admin) {
                 return response()->json([
                     'message' => 'Email tidak terdaftar'
@@ -55,7 +55,9 @@ class LoginController extends Controller
                     'id' => $admin->id,
                     'name' => $admin->name,
                     'email' => $admin->email,
-                    'role_id ' => $admin->role->id,
+                    'role_id' => $admin->role->id,
+                    'merchant_id' => $admin->merchant_id,
+                    'merchant' => $admin->merchant
                 ]
             ], 200);
 
