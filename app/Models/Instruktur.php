@@ -23,6 +23,7 @@ class Instruktur extends Authenticatable
         'email',
         'password',
         'role_id',
+        'merchant_id',
     ];
 
     /**

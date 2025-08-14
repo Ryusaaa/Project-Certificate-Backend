@@ -16,7 +16,8 @@ class CertificateDownload extends Model
         'certificate_number',
         'user_id',
         'expires_at',
-        'download_count'
+        'download_count',
+        'merchant_id'
     ];
 
     protected $casts = [

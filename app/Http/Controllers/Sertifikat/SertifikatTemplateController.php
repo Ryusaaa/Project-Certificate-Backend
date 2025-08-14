@@ -95,18 +95,15 @@ class SertifikatTemplateController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'background_image' => 'required|string',
-                'elements' => 'required|array'
+                'elements' => 'required|array',
+                'certificate_number_format' => 'nullable|string',
+                'merchant_id' => 'required|exists:merchants,id'
             ]);
 
-            // Clean background image URL to path
-            $background_image = $validated['background_image'];
-            if (preg_match('#/storage/certificates/([^/]+)$#', $background_image, $matches)) {
-                $background_image = 'certificates/' . $matches[1];
-            }
-
-            // Verify background exists
-            if (!Storage::disk('public')->exists($background_image)) {
-                throw new \Exception('Background image not found');
+            // Ubah URL gambar menjadi path penyimpanan
+            $background_path = str_replace(Storage::url(''), '', $validated['background_image']);
+            if (!Storage::disk('public')->exists($background_path)) {
+                 return response()->json(['status' => 'error', 'message' => 'Background image not found on storage.'], 404);
             }
 
             // Create template
@@ -161,7 +158,8 @@ class SertifikatTemplateController extends Controller
                 'name' => 'sometimes|required|string|max:255',
                 'background_image' => 'sometimes|required|string',
                 'elements' => 'sometimes|required|array',
-                'certificate_number_format' => 'sometimes|nullable|string'
+                'certificate_number_format' => 'sometimes|nullable|string',
+                'merchant_id' => 'sometimes|required|exists:merchants,id'
             ]);
 
             if (isset($validated['background_image'])) {

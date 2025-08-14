@@ -18,7 +18,7 @@ class LoginInstrukturController extends Controller
                 'password' => 'required|string|min:6'
             ]);
 
-            $instruktur = Instruktur::where('email', $request->email)->first();
+            $instruktur = Instruktur::where('email', $request->email)->with(['merchant'])->first();
             
             if (!$instruktur) {
                 return response()->json([

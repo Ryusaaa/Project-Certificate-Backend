@@ -27,6 +27,7 @@ class User extends Authenticatable
         'asal_institusi',
         'password',
         'role_id',
+        'merchant_id'
     ];
 
     /**
@@ -62,7 +63,6 @@ class User extends Authenticatable
         );
     }
 
-    protected $appends = ['data_activity'];
     /**
      * Get the attributes that should be cast.
      *
@@ -74,12 +74,6 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
-    }
-
-
-    public function getDataActivityAttribute()
-    {
-        return $this->daftarActivity()->get();
     }
 
     public function role()

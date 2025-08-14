@@ -39,6 +39,7 @@ class DataActivityTypeController extends Controller
     {
         $request->validate([
             'type_name' => 'required|string|unique:data_activity_types,type_name|max:255',
+            'merchant_id' => 'required|exists:merchants,id'
         ]);
         
         $data = DataActivityType::create($request->all());
@@ -80,6 +81,7 @@ class DataActivityTypeController extends Controller
         
         $request->validate([
             'type_name' => 'sometimes|required|string|unique:data_activity_types,type_name,'.$id.'|max:255',
+            'merchant_id' => 'sometimes|required|exists:merchants,id'
         ]);
 
         $data->update($request->all());

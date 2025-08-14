@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-
-use \App\Models\Role;
+use App\Models\Role;
+use App\Traits\BelongsToMerchant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;  
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,7 +11,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Admin extends Authenticatable
 {
-    use  HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, BelongsToMerchant;
     //
 
     protected $table = 'admins';

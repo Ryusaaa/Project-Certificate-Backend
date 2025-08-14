@@ -16,7 +16,11 @@ return new class extends Migration
         });
 
         Schema::table('data_activity', function (Blueprint $table) {
-            $table->foreignId('merchant_id')->nullable()->constrained('merchants')->onDelete('set null');
+            $table->foreignId('merchant_id')->nullable()->constrained('merchants')->after('id');
+        });
+
+        Schema::table('data_activity_types', function (Blueprint $table) {
+            $table->foreignId('merchant_id')->nullable()->constrained('merchants')->after('id');
         });
 
         Schema::table('instrukturs', function (Blueprint $table) {
@@ -51,6 +55,11 @@ return new class extends Migration
         });
 
         Schema::table('data_activity', function (Blueprint $table) {
+            $table->dropForeign(['merchant_id']);
+            $table->dropColumn('merchant_id');
+        });
+
+         Schema::table('data_activity_types', function (Blueprint $table) {
             $table->dropForeign(['merchant_id']);
             $table->dropColumn('merchant_id');
         });

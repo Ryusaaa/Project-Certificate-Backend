@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         
+        $this->call(MerchantSeeder::class);
         $this->call(RoleSeeder::class);
         $this->call(InstrukturSeeder::class);
         $this->call(Admin::class);
@@ -26,6 +27,7 @@ class DatabaseSeeder extends Seeder
             'asal_institusi' => 'PT. Example',
             'email' => 'test@example.com',
             'role_id' => 3,
+            'merchant_id' => 1,
         ]);
 
 

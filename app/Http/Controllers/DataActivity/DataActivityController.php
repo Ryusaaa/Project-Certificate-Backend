@@ -128,6 +128,7 @@ class DataActivityController extends Controller
                 'instruktur_id' => $item->instruktur_id,
                 'instruktur_name' => $item->instruktur->name ?? null,
                 'total_peserta' => $item->peserta->count(),
+                'merchant_id' => $item->merchant_id,
             ];
         });
 
@@ -154,6 +155,7 @@ class DataActivityController extends Controller
             'activity_type_id' => 'required|exists:data_activity_types,id',
             'description' => 'nullable|string',
             'instruktur_id' => 'required|exists:instrukturs,id',
+            'merchant_id' => 'required|exists:merchants,id',
         ]);
 
         $description = $request->description ? $this->handleEmbeddedImages($request->description) : null;
@@ -166,6 +168,7 @@ class DataActivityController extends Controller
             'activity_type_id' => $request->activity_type_id,
             'description' => $description,
             'instruktur_id' => $request->instruktur_id,
+            'merchant_id' => $request->merchant_id,
         ]);
 
         return response()->json([
@@ -199,7 +202,8 @@ class DataActivityController extends Controller
             'peserta' => $dataActivity->peserta,
             'total_peserta' => $dataActivity->peserta->count(),
             'sertifikat_id' => $dataActivity->sertifikat_id,
-            'sertifikat' => $dataActivity->sertifikat
+            'sertifikat' => $dataActivity->sertifikat,
+            'merchant_id' => $dataActivity->merchant_id,
         ];
 
         return response()->json([
@@ -227,6 +231,7 @@ class DataActivityController extends Controller
             'activity_type_id' => 'sometimes|required|exists:data_activity_types,id',
             'description' => 'nullable|string',
             'instruktur_id' => 'sometimes|required|exists:instrukturs,id',
+            'merchant_id' => 'sometimes|required|exists:merchants,id',
         ]);
 
         $payload = $request->all();
