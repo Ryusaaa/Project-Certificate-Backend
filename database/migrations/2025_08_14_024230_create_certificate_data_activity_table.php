@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('certificate_data_activity', function (Blueprint $table) {
             $table->id();
+            $table->string('sent_by_admin_name')->nullable();
             $table->foreignId('data_activity_id')
                 ->constrained('data_activity')
                 ->onDelete('cascade');

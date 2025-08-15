@@ -9,6 +9,7 @@ use App\Models\Instruktur;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Sertifikat;
+use Dflydev\DotAccessData\Data;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -271,13 +272,31 @@ class DataActivityController extends Controller
 
     public function attachTemplates(Request $request, $activityId)
     {
+        if (!is_numeric($activityId)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Parameter activityId harus berupa angka.'
+            ], 400);
+        }
         try {
             $validated = $request->validate([
-                'sertifikat_ids' => 'required|array',
-                'sertifikat_ids.*' => 'exists:sertifikats,id'
+                'sertifikat_id' => 'required|array',
+                'admin_id' => 'required|exists:admins,id',
+                'sertifikat_id.*' => 'exists:sertifikats,id'
             ]);
 
             $dataActivity = DataActivity::findOrFail($activityId);
+
+            // Ambil admin yang login
+            $admin_id = (int) $validated['admin_id'];
+            $admin = Admin::where('id', $admin_id)->first();
+            $adminName = $admin ? $admin->name : null;
+            if (!$adminName) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Admin tidak ditemukan.'
+                ], 403);
+            }
 
             // Validasi merchant_id pada dataActivity
             if (!$dataActivity->merchant_id) {
@@ -288,7 +307,7 @@ class DataActivityController extends Controller
             }
 
             $alreadySent = [];
-            foreach ($validated['sertifikat_ids'] as $templateId) {
+            foreach ($validated['sertifikat_id'] as $templateId) {
                 $existing = $dataActivity->sertifikat()
                     ->wherePivot('sertifikat_id', $templateId)
                     ->wherePivot('status', '!=', 'approved')
@@ -299,14 +318,16 @@ class DataActivityController extends Controller
                     continue;
                 }
 
+                // Tambahkan nama admin ke kolom pivot (pastikan kolomnya ada)
                 $dataActivity->sertifikat()->attach($templateId, [
                     'status' => 'pending',
-                    'is_active' => false
+                    'is_active' => false,
+                    'sent_by_admin_name' => $adminName
                 ]);
 
                 // Jika merchant_id = 1, attach juga ke instruktur dengan merchant_id = 1
                 if ($dataActivity->merchant_id == 1) {
-                    $instruktur = \App\Models\Instruktur::find($dataActivity->instruktur_id);
+                    $instruktur = Instruktur::find($dataActivity->instruktur_id);
                     if ($instruktur && $instruktur->merchant_id == 1) {
                         // Di sini bisa tambahkan logika khusus jika perlu
                         // Misal: update kolom pivot lain, atau log, dsb.
@@ -341,6 +362,12 @@ class DataActivityController extends Controller
      */
     public function listTemplates($activityId)
     {
+        if (!is_numeric($activityId)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Parameter activityId harus berupa angka.'
+            ], 400);
+        }
         try {
             $dataActivity = DataActivity::findOrFail($activityId);
             
@@ -378,6 +405,12 @@ class DataActivityController extends Controller
      */
     public function approveTemplate(Request $request, $activityId)
     {
+        if (!is_numeric($activityId)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Parameter activityId harus berupa angka.'
+            ], 400);
+        }
         try {
             $validated = $request->validate([
                 'sertifikat_id' => 'required|exists:sertifikats,id'
@@ -421,32 +454,42 @@ class DataActivityController extends Controller
      */
     public function getPendingTemplates($activityId)
     {
+        if (!is_numeric($activityId)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Parameter activityId must be a number.'
+            ], 400);
+        }
+
         try {
-            $dataActivity = DataActivity::findOrFail($activityId);
-            
-            $templates = $dataActivity->sertifikat()
-                ->wherePivot('status', 'pending')
-                ->get()
-                ->map(function ($template) {
-                    return [
-                        'id' => $template->id,
-                        'name' => $template->name,
-                        'background_image' => $template->background_image,
-                        'preview_url' => $template->background_image, // Adjust based on your preview logic
-                        'created_at' => $template->pivot->created_at
-                    ];
-                });
+            $activity = DataActivity::findOrFail($activityId);
+            $admin_name = Data
+            // Get all templates attached to this activity
+            $templates = $activity->sertifikat()->get();
+
+            // Transform the templates to match the frontend expected format
+            $transformedTemplates = $templates->map(function ($template, $admin_name) {
+                return [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'background_image' => $template->background_image,
+                    'elements' => $template->elements,
+                    'status' => $template->pivot ? $template->pivot->status : 'pending',
+                    'sent_by_admin_name' => $admin_name,
+                    'created_at' => $template->created_at,
+                    'updated_at' => $template->updated_at
+                ];
+            });
 
             return response()->json([
                 'status' => 'success',
-                'data' => $templates
+                'data' => $transformedTemplates
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error getting pending templates: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => 'Error fetching pending templates: ' . $e->getMessage()
             ], 500);
         }
     }
