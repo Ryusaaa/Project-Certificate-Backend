@@ -54,7 +54,7 @@ class Sertifikat extends Model
     public function activities()
     {
         return $this->belongsToMany(DataActivity::class, 'certificate_data_activity', 'sertifikat_id', 'data_activity_id', '')
-                    ->withPivot('status', 'is_active')
+                    ->withPivot('status', 'is_active', 'sent_by_admin_name', 'created_at')
                     ->withTimestamps();
     }
 }

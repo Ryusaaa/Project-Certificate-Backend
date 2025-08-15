@@ -432,11 +432,15 @@ class DataActivityController extends Controller
                 ['status' => 'approved', 'is_active' => true]
             );
 
+            // Update sertifikat_id di data activity agar template terpasang
+            $dataActivity->sertifikat_id = $validated['sertifikat_id'];
+            $dataActivity->save();
+
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Template approved successfully'
+                'message' => 'Template approved and attached successfully'
             ]);
 
         } catch (\Exception $e) {
@@ -463,19 +467,18 @@ class DataActivityController extends Controller
 
         try {
             $activity = DataActivity::findOrFail($activityId);
-            $admin_name = Data
             // Get all templates attached to this activity
             $templates = $activity->sertifikat()->get();
 
             // Transform the templates to match the frontend expected format
-            $transformedTemplates = $templates->map(function ($template, $admin_name) {
+            $transformedTemplates = $templates->map(function ($template) {
                 return [
                     'id' => $template->id,
                     'name' => $template->name,
                     'background_image' => $template->background_image,
                     'elements' => $template->elements,
                     'status' => $template->pivot ? $template->pivot->status : 'pending',
-                    'sent_by_admin_name' => $admin_name,
+                    'sent_by_admin_name' => $template->pivot ? $template->pivot->sent_by_admin_name : null,
                     'created_at' => $template->created_at,
                     'updated_at' => $template->updated_at
                 ];
