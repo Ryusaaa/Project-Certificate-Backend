@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\DataActivity;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\DataActivity;
+use App\Models\Instruktur;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Sertifikat;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -275,13 +278,48 @@ class DataActivityController extends Controller
             ]);
 
             $dataActivity = DataActivity::findOrFail($activityId);
-            
-            // Attach templates with pending status
+
+            // Validasi merchant_id pada dataActivity
+            if (!$dataActivity->merchant_id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'merchant_id tidak ditemukan pada data activity.'
+                ], 400);
+            }
+
+            $alreadySent = [];
             foreach ($validated['sertifikat_ids'] as $templateId) {
+                $existing = $dataActivity->sertifikat()
+                    ->wherePivot('sertifikat_id', $templateId)
+                    ->wherePivot('status', '!=', 'approved')
+                    ->first();
+
+                if ($existing) {
+                    $alreadySent[] = $templateId;
+                    continue;
+                }
+
                 $dataActivity->sertifikat()->attach($templateId, [
                     'status' => 'pending',
                     'is_active' => false
                 ]);
+
+                // Jika merchant_id = 1, attach juga ke instruktur dengan merchant_id = 1
+                if ($dataActivity->merchant_id == 1) {
+                    $instruktur = \App\Models\Instruktur::find($dataActivity->instruktur_id);
+                    if ($instruktur && $instruktur->merchant_id == 1) {
+                        // Di sini bisa tambahkan logika khusus jika perlu
+                        // Misal: update kolom pivot lain, atau log, dsb.
+                    }
+                }
+            }
+
+            if (!empty($alreadySent)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Beberapa template sudah pernah dikirim dan belum di-approve.',
+                    'already_sent' => $alreadySent
+                ], 409);
             }
 
             return response()->json([
