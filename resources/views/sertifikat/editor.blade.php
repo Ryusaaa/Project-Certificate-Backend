@@ -358,6 +358,12 @@
 </head>
 <body>
     <div class="container">
+        {{-- ========================================================== --}}
+        {{-- PERUBAHAN 1: Tambahkan input tersembunyi untuk merchant_id --}}
+        {{-- Pastikan Anda mengirimkan variabel $merchant_id dari controller --}}
+        {{-- ========================================================== --}}
+        <input type="hidden" id="merchantId" value="1">
+
         <div class="sidebar">
             <div class="form-group">
                 <label for="templateName">Nama Template</label>
@@ -1147,6 +1153,16 @@
             try {
                 const preview = document.getElementById('certificate-preview');
                 const templateName = document.getElementById('templateName').value;
+                
+                // ==========================================================
+                // PERUBAHAN 2: Baca merchant_id dari input tersembunyi
+                // ==========================================================
+                const merchantId = document.getElementById('merchantId').value;
+                
+                if (!merchantId) {
+                    showNotification('Merchant ID tidak ditemukan. Harap muat ulang halaman.', 'error');
+                    return;
+                }
                 if (!templateName) {
                     showNotification('Harap masukkan nama template', 'error');
                     return;
@@ -1161,7 +1177,6 @@
                 }
                 showNotification('Menyimpan template...');
 
-                // Get background image URL from preview
                 const backgroundImage = preview.dataset.backgroundImage;
 
                 const data = {
@@ -1183,6 +1198,10 @@
                             height: el.height
                         })
                     })),
+                    // ==========================================================
+                    // PERUBAHAN 3: Tambahkan merchant_id ke payload
+                    // ==========================================================
+                    merchant_id: merchantId,
                     _token: document.querySelector('meta[name="csrf-token"]').content
                 };
 
@@ -1207,8 +1226,6 @@
                 showNotification(error.message || 'Gagal menyimpan template', 'error');
             }
         }
-
-
     </script>
 </body>
 </html>

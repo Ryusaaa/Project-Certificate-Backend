@@ -90,14 +90,15 @@ class SertifikatTemplateController extends Controller
     public function store(Request $request)
     {
         try {
-            Log::info('Creating new certificate template');
+            // Ambil merchant_id dari user yang sedang login (misal relasi user->merchant_id)
+            $merchantId = $request->user()->merchant_id ?? 1; // fallback ke 1 jika tidak ada
 
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'background_image' => 'required|string',
                 'elements' => 'required|array',
                 'certificate_number_format' => 'nullable|string',
-                'merchant_id' => 'required|exists:merchants,id'
+                // Hapus 'merchant_id' dari validasi request
             ]);
 
             // Ubah URL gambar menjadi path penyimpanan
@@ -116,6 +117,7 @@ class SertifikatTemplateController extends Controller
                 'height' => $this->pdfHeight,
                 'orientation' => 'landscape'
             ];
+            $template->merchant_id = $merchantId; // Set otomatis dari user
 
             if (!$template->save()) {
                 throw new \Exception('Failed to save template');
