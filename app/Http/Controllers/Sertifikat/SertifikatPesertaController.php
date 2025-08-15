@@ -19,6 +19,34 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SertifikatPesertaController extends Controller
 {
+
+    private function getAllFonts()
+    {
+        $fontsDir = public_path('fonts');
+        $fonts = [];
+
+        if (!is_dir($fontsDir))
+            return $fonts;
+
+        foreach (scandir($fontsDir) as $fontFamily) {
+            if ($fontFamily === '.' || $fontFamily === '..')
+                continue;
+            $familyPath = $fontsDir . DIRECTORY_SEPARATOR . $fontFamily;
+            if (is_dir($familyPath)) {
+                $fonts[$fontFamily] = [];
+                foreach (scandir($familyPath) as $fontFile) {
+                    if (in_array($fontFile, ['.', '..']))
+                        continue;
+                    $ext = pathinfo($fontFile, PATHINFO_EXTENSION);
+                    if (in_array(strtolower($ext), ['ttf', 'otf', 'woff', 'woff2'])) {
+                        $fonts[$fontFamily][] = $fontFile;
+                    }
+                }
+            }
+        }
+        return $fonts;
+    }
+
     private $pdfWidth = 842;    // A4 Landscape width
     private $pdfHeight = 595;   // A4 Landscape height
 
@@ -43,7 +71,7 @@ class SertifikatPesertaController extends Controller
                     'message' => 'Template sertifikat tidak ditemukan'
                 ], 404);
             }
-            
+
             // Format date
             setlocale(LC_TIME, 'id_ID');
             Carbon::setLocale('id');
@@ -69,7 +97,7 @@ class SertifikatPesertaController extends Controller
 
             // Generate PDF
             $pdf = PDF::loadView('sertifikat.template', $data)
-                     ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
+                ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
 
             // Generate temporary filename for preview
             $filename = sprintf(
@@ -85,9 +113,9 @@ class SertifikatPesertaController extends Controller
 
             // Return preview URL that will expire
             $previewUrl = '/storage/' . $pdfPath;
-            
+
             // Schedule file deletion after 1 hour
-            dispatch(function() use ($pdfPath) {
+            dispatch(function () use ($pdfPath) {
                 Storage::disk('public')->delete($pdfPath);
             })->delay(now()->addHour());
 
@@ -129,6 +157,7 @@ class SertifikatPesertaController extends Controller
                     'message' => 'Template sertifikat tidak ditemukan'
                 ], 404);
             }
+
             
             // Format date
             setlocale(LC_TIME, 'id_ID');
@@ -155,7 +184,7 @@ class SertifikatPesertaController extends Controller
 
             // Generate PDF
             $pdf = PDF::loadView('sertifikat.template', $data)
-                     ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
+                ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
 
             // Generate filename
             $filename = sprintf(
@@ -326,12 +355,12 @@ class SertifikatPesertaController extends Controller
         }
     }
 
-    private function generateCertificateNumber($template, $format = null) 
+    private function generateCertificateNumber($template, $format = null)
     {
         try {
             // Use template's format if no format provided
             $format = $format ?? $template->certificate_number_format;
-            
+
             if (empty($format)) {
                 throw new \Exception('Format nomor sertifikat belum diatur');
             }
@@ -361,7 +390,7 @@ class SertifikatPesertaController extends Controller
             
             // Get next number from template
             $nextNumber = $template->last_certificate_number + 1;
-            
+
             // Update the last number in template
             $template->update([
                 'last_certificate_number' => $nextNumber
@@ -387,7 +416,7 @@ class SertifikatPesertaController extends Controller
         try {
             // Find download record by token
             $download = CertificateDownload::where('token', $token)->first();
-            
+
             if (!$download) {
                 return response()->json([
                     'status' => 'error',
@@ -404,7 +433,7 @@ class SertifikatPesertaController extends Controller
             }
 
             $filepath = 'certificates/generated/' . $download->filename;
-            
+
             // Check if file exists
             if (!Storage::disk('public')->exists($filepath)) {
                 return response()->json([
@@ -437,7 +466,7 @@ class SertifikatPesertaController extends Controller
         try {
             // Find download record by token
             $download = CertificateDownload::where('token', $token)->first();
-            
+
             if (!$download) {
                 return response()->json([
                     'status' => 'error',
@@ -454,7 +483,7 @@ class SertifikatPesertaController extends Controller
             }
 
             $filepath = 'certificates/generated/' . $download->filename;
-            
+
             // Check if file exists
             if (!Storage::disk('public')->exists($filepath)) {
                 return response()->json([
@@ -505,7 +534,7 @@ class SertifikatPesertaController extends Controller
             }
 
             $generatedPDFs = [];
-            
+
             foreach ($validated['recipients'] as $recipient) {
                 // Format date for each recipient
                 setlocale(LC_TIME, 'id_ID');
@@ -647,13 +676,13 @@ class SertifikatPesertaController extends Controller
                     'message' => 'User tidak ditemukan'
                 ], 404);
             }
-            
+
             // Get certificates from UserCertificate with the download tokens
             $certificates = UserCertificate::with('certificateDownload')
                 ->where('user_id', $id)
                 ->where('status', 'active')
                 ->get()
-                ->map(function($userCertificate) {
+                ->map(function ($userCertificate) {
                     $download = $userCertificate->certificateDownload;
                     if (!$download) {
                         return null;

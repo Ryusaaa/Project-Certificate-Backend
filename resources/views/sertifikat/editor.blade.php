@@ -447,46 +447,21 @@
                             <option value="Georgia" style="font-family: Georgia">Georgia</option>
                         </optgroup>
                         <optgroup label="Custom Fonts">
-                            <option value="Montserrat" style="font-family: 'Montserrat'">Montserrat</option>
-                            <option value="Playfair Display" style="font-family: 'Playfair Display'">Playfair Display</option>
-                            <option value="Poppins" style="font-family: 'Poppins'">Poppins</option>
-                            <option value="Alice" style="font-family: 'Alice'">Alice</option>
-                            <option value="Allura" style="font-family: 'Allura'">Allura</option>
-                            <option value="Anonymous Pro" style="font-family: 'Anonymous Pro'">Anonymous Pro</option>
-                            <option value="Anton" style="font-family: 'Anton'">Anton</option>
-                            <option value="Arapey" style="font-family: 'Arapey'">Arapey</option>
-                            <option value="Archivo Black" style="font-family: 'Archivo Black'">Archivo Black</option>
-                            <option value="Arimo" style="font-family: 'Arimo'">Arimo</option>
-                            <option value="Barlow" style="font-family: 'Barlow'">Barlow</option>
-                            <option value="Bebas Neue" style="font-family: 'Bebas Neue'">Bebas Neue</option>
-                            <option value="Belleza" style="font-family: 'Belleza'">Belleza</option>
-                            <option value="Bree Serif" style="font-family: 'Bree Serif'">Bree Serif</option>
-                            <option value="Bryndan Write" style="font-family: 'Bryndan Write'">Bryndan Write</option>
-                            <option value="Chewy" style="font-family: 'Chewy'">Chewy</option>
-                            <option value="Chunkfive Ex" style="font-family: 'Chunkfive Ex'">Chunkfive Ex</option>
-                            <option value="Cormorant Garamond" style="font-family: 'Cormorant Garamond'">Cormorant Garamond</option>
-                            <option value="DM Sans" style="font-family: 'DM Sans'">DM Sans</option>
-                            <option value="DM Serif Display" style="font-family: 'DM Serif Display'">DM Serif Display</option>
-                            <option value="Forum" style="font-family: 'Forum'">Forum</option>
-                            <option value="Great Vibes" style="font-family: 'Great Vibes'">Great Vibes</option>
-                            <option value="Hammersmith One" style="font-family: 'Hammersmith One'">Hammersmith One</option>
-                            <option value="Inria Serif" style="font-family: 'Inria Serif'">Inria Serif</option>
-                            <option value="Inter" style="font-family: 'Inter'">Inter</option>
-                            <option value="League Gothic" style="font-family: 'League Gothic'">League Gothic</option>
-                            <option value="League Spartan" style="font-family: 'League Spartan'">League Spartan</option>
-                            <option value="Libre Baskerville" style="font-family: 'Libre Baskerville'">Libre Baskerville</option>
-                            <option value="Lora" style="font-family: 'Lora'">Lora</option>
-                            <option value="Merriweather" style="font-family: 'Merriweather'">Merriweather</option>
-                            <option value="Nunito" style="font-family: 'Nunito'">Nunito</option>
-                            <option value="Open Sans" style="font-family: 'Open Sans'">Open Sans</option>
-                            <option value="Oswald" style="font-family: 'Oswald'">Oswald</option>
-                            <option value="Questrial" style="font-family: 'Questrial'">Questrial</option>
-                            <option value="Quicksand" style="font-family: 'Quicksand'">Quicksand</option>
-                            <option value="Raleway" style="font-family: 'Raleway'">Raleway</option>
-                            <option value="Roboto" style="font-family: 'Roboto'">Roboto</option>
-                            <option value="Shrikhand" style="font-family: 'Shrikhand'">Shrikhand</option>
-                            <option value="Tenor Sans" style="font-family: 'Tenor Sans'">Tenor Sans</option>
-                            <option value="Yeseva One" style="font-family: 'Yeseva One'">Yeseva One</option>
+                            @php
+                                // Generate options from public/fonts folders. Value = folder name, label = folder with spaces
+                                $fontsDir = public_path('fonts');
+                                if (is_dir($fontsDir)) {
+                                    $folders = array_filter(scandir($fontsDir), function($d) use ($fontsDir){
+                                        return $d !== '.' && $d !== '..' && is_dir($fontsDir . DIRECTORY_SEPARATOR . $d);
+                                    });
+                                    foreach ($folders as $folder) {
+                                        // prettify label
+                                        $label = str_replace(['_','-'], ' ', $folder);
+                                        $label = ucwords($label);
+                                        echo "<option value=\"{$folder}\" data-folder=\"{$folder}\" style=\"font-family: '{$label}'\">{$label}</option>\n";
+                                    }
+                                }
+                            @endphp
                         </optgroup>
                     </select>
                 </div>
@@ -857,12 +832,31 @@
                     return;
                 }
 
+                const familyDisplay = document.getElementById('fontFamily').value;
+                const weightSelect = document.getElementById('fontWeight');
+                const weightOption = weightSelect.options[weightSelect.selectedIndex];
+                const file = weightOption ? (weightOption.dataset.file || weightOption.value) : null;
+                const cssWeight = weightOption ? (weightOption.dataset.cssWeight || weightOption.value) : '400';
+                const cssStyle = document.getElementById('fontStyle').value || 'normal';
+
+                // register a generated family so preview uses the exact file
+                const generatedFamily = registerFontFace(familyDisplay, file, cssWeight, cssStyle, familyDisplay) || familyDisplay;
+
                 element.text = text;
                 element.fontSize = parseInt(document.getElementById('fontSize').value) || 16;
                 element.font = {
-                    family: document.getElementById('fontFamily').value,
-                    weight: document.getElementById('fontWeight').value,
-                    style: document.getElementById('fontStyle').value
+                    // display name (what user selected), used for storing
+                    family: familyDisplay,
+                    // folder name where font files are stored
+                    folder: familyDisplay,
+                    // css weight used for PDF generation (numeric string)
+                    weight: String(cssWeight),
+                    cssWeight: String(cssWeight),
+                    style: cssStyle,
+                    // actual filename in public/fonts/<family>/
+                    weightFile: file,
+                    // previewFamily used only on client to render correct file
+                    previewFamily: generatedFamily
                 };
                 element.textAlign = document.getElementById('textAlign').value;
                 element.placeholderType = placeholderType;
@@ -893,11 +887,10 @@
             if (type === 'text') {
                 document.getElementById('elementText').value = '';
             }
-            // Remove imageUrl reset since the element doesn't exist
             showNotification('Elemen berhasil ditambahkan');
         }
 
-        function updatePreview() {
+    function updatePreview() {
             const preview = document.getElementById('certificate-preview');
             const hasBackground = preview.classList.contains('has-bg');
             preview.innerHTML = '';
@@ -923,7 +916,7 @@
             `;
             preview.appendChild(elementContainer);
 
-            elements.forEach(element => {
+        elements.forEach(element => {
                 const div = document.createElement('div');
                 div.className = 'element';
                 div.dataset.id = element.id;
@@ -932,20 +925,56 @@
                 div.style.top = element.y + 'px';
 
                 if (element.type === 'text') {
+                    // Ensure font-face for this element is registered (if editor stored folder+weightFile)
+                    if (element.font && element.font.folder && element.font.weightFile) {
+                        try {
+                            const gen = registerFontFace(element.font.folder, element.font.weightFile, element.font.cssWeight || element.font.weight || '400', element.font.style || 'normal', element.font.family || element.font.folder);
+                            if (gen) element.font.previewFamily = gen;
+                        } catch (e) {
+                            console.warn('registerFontFace failed for', element.font, e);
+                        }
+                    }
                     const textDiv = document.createElement('p');
                     textDiv.style.fontSize = element.fontSize + 'px';
-                    textDiv.style.fontFamily = "'" + element.font.family + "', sans-serif";
-                    textDiv.style.fontWeight = element.font.weight || '400';
-                    textDiv.style.fontStyle = element.font.style || 'normal';
+            // Prefer previewFamily (registered @font-face) if available, otherwise use display family
+            const previewFamily = element.font && element.font.previewFamily ? element.font.previewFamily : element.font.family;
+            textDiv.style.fontFamily = "'" + previewFamily + "', sans-serif";
+            textDiv.style.fontWeight = element.font.weight || '400';
+            textDiv.style.fontStyle = element.font.style || 'normal';
                     textDiv.style.textAlign = element.textAlign;
                     textDiv.style.margin = '0';
                     textDiv.style.padding = '0';
                     textDiv.style.whiteSpace = 'nowrap';
                     
-                    // Ensure font is loaded
+                    // Ensure font is loaded (try to check previewFamily first)
                     document.fonts.ready.then(() => {
-                        if (!document.fonts.check(`${element.font.weight} ${element.font.style} 16px "${element.font.family}"`)) {
-                            console.warn(`Font ${element.font.family} might not be loaded properly`);
+                        const checkFam = previewFamily || element.font.family;
+                        // Normalize weight to a numeric token or 'normal'
+                        let weightToken = String(element.font.weight || element.font.cssWeight || '400');
+                        if (!/^[0-9]+$/.test(weightToken)) {
+                            // map common textual tokens to numeric weights
+                            const wt = weightToken.toLowerCase();
+                            if (wt === 'bold') weightToken = '700';
+                            else if (wt === 'semibold' || wt === 'semi' || wt === '600') weightToken = '600';
+                            else if (wt === 'medium' || wt === '500') weightToken = '500';
+                            else weightToken = '400';
+                        }
+                        const styleToken = (element.font.style || 'normal');
+                        const sizeToken = (element.fontSize || 16) + 'px';
+                        const descriptor = `${styleToken} ${weightToken} ${sizeToken} "${checkFam}"`;
+                        try {
+                            if (!document.fonts.check(descriptor)) {
+                                console.warn(`Font ${checkFam} might not be loaded properly (checked: ${descriptor})`);
+                            }
+                        } catch (e) {
+                            // In case descriptor is still invalid for some unexpected value, fallback to simple check
+                            try {
+                                if (!document.fonts.check(`${sizeToken} "${checkFam}"`)) {
+                                    console.warn(`Font ${checkFam} might not be loaded properly (fallback check)`);
+                                }
+                            } catch (ignored) {
+                                console.warn('Font check failed with unexpected descriptor', descriptor, ignored);
+                            }
                         }
                     });
                     textDiv.style.position = 'absolute';
@@ -1000,24 +1029,6 @@
 
             updateElementsList();
         }
-
-        // Event listener untuk dropdown fontFamily
-        document.addEventListener('DOMContentLoaded', function() {
-            const fontFamilySelect = document.getElementById('fontFamily');
-            const elementTextInput = document.getElementById('elementText');
-            fontFamilySelect.addEventListener('change', function() {
-                const selectedFont = fontFamilySelect.value;
-                // Ubah font pada input teks
-                if (elementTextInput) {
-                    elementTextInput.style.fontFamily = `'${selectedFont}', Arial, sans-serif`;
-                }
-                // Jika sedang edit elemen teks, update property font dan preview
-                if (selectedElement && selectedElement.type === 'text') {
-                    selectedElement.font.family = selectedFont;
-                    updatePreview();
-                }
-            });
-        });
 
         function startDragging(e) {
             e.preventDefault();
@@ -1125,8 +1136,37 @@
                 document.getElementById('placeholderType').value = element.placeholderType || 'custom';
                 document.getElementById('elementText').value = element.text;
                 document.getElementById('fontSize').value = element.fontSize;
-                document.getElementById('fontFamily').value = element.font.family;
-                document.getElementById('fontWeight').value = element.font.weight || '400';
+
+                // set display family first, then populate weights and select the correct file
+                const familyDisplay = element.font.family || element.font.previewFamily || document.getElementById('fontFamily').value;
+                document.getElementById('fontFamily').value = familyDisplay;
+
+                // populate weights and then choose the option that matches saved weightFile
+                fetchWeightsForFont(familyDisplay).then(() => {
+                    const weightSelect = document.getElementById('fontWeight');
+                    for (let i = 0; i < weightSelect.options.length; i++) {
+                        const opt = weightSelect.options[i];
+                        if (opt.dataset && opt.dataset.file && opt.dataset.file === element.font.weightFile) {
+                            weightSelect.selectedIndex = i;
+                            break;
+                        }
+                        // fallback: match cssWeight
+                        if (opt.dataset && opt.dataset.cssWeight && opt.dataset.cssWeight === String(element.font.weight)) {
+                            weightSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+
+                    // ensure generated family is registered so preview shows correctly
+                    const selOpt = weightSelect.options[weightSelect.selectedIndex];
+                    const file = selOpt ? (selOpt.dataset.file || selOpt.value) : element.font.weightFile;
+                    const cssWeight = selOpt ? (selOpt.dataset.cssWeight || selOpt.value) : element.font.weight || '400';
+                    const cssStyle = element.font.style || 'normal';
+                    const generated = registerFontFace(familyDisplay, file, cssWeight, cssStyle, familyDisplay);
+                    // update element.font.family to the generated one used by preview
+                    element.font.previewFamily = generated || familyDisplay;
+                });
+
                 document.getElementById('fontStyle').value = element.font.style || 'normal';
                 document.getElementById('textAlign').value = element.textAlign;
             } else {
@@ -1149,7 +1189,7 @@
             showNotification('Elemen siap untuk diedit');
         }
 
-        async function saveTemplate() {
+    async function saveTemplate() {
             try {
                 const preview = document.getElementById('certificate-preview');
                 const templateName = document.getElementById('templateName').value;
@@ -1179,17 +1219,44 @@
 
                 const backgroundImage = preview.dataset.backgroundImage;
 
+                // normalize elements to ensure font.style exists and weightFile is valid
+                function normalizeElementsForSave(list) {
+                    return list.map(el => {
+                        if (el.type === 'text') {
+                            el.font = el.font || {};
+                            // ensure style is present
+                            el.font.style = el.font.style || (document.getElementById('fontStyle') ? document.getElementById('fontStyle').value : 'normal') || 'normal';
+                            // ensure cssWeight
+                            el.font.cssWeight = el.font.cssWeight || el.font.weight || '400';
+                            // only keep weightFile if it looks like a real font filename
+                            if (el.font.weightFile && !/\.(ttf|otf|woff2?|woff)$/i.test(String(el.font.weightFile))) {
+                                delete el.font.weightFile;
+                            }
+                            el.font.folder = el.font.folder || el.font.family || null;
+                        }
+                        return el;
+                    });
+                }
+
                 const data = {
                     name: templateName,
                     background_image: backgroundImage,
-                    elements: elements.map(el => ({
+                    elements: normalizeElementsForSave(elements).map(el => ({
                         type: el.type,
                         x: el.x,
                         y: el.y,
                         ...(el.type === 'text' ? {
                             text: el.text,
                             fontSize: el.fontSize,
-                            font: el.font,
+                            // send normalized font object (do not include previewFamily)
+                            font: {
+                                family: el.font.family,
+                                folder: el.font.folder || el.font.family,
+                                weight: el.font.weight,
+                                cssWeight: el.font.cssWeight || el.font.weight,
+                                style: el.font.style,
+                                weightFile: el.font.weightFile
+                            },
                             textAlign: el.textAlign,
                             placeholderType: el.placeholderType
                         } : {
@@ -1226,6 +1293,204 @@
                 showNotification(error.message || 'Gagal menyimpan template', 'error');
             }
         }
+
+    // Helper: map numeric weight to label
+        function weightLabel(weight) {
+            switch (String(weight)) {
+                case '100': return 'Thin';
+                case '200': return 'Extra Light';
+                case '300': return 'Light';
+                case '400': return 'Regular';
+                case '500': return 'Medium';
+                case '600': return 'Semi Bold';
+                case '700': return 'Bold';
+                case '800': return 'Extra Bold';
+                case '900': return 'Black';
+                default: return String(weight);
+            }
+        }
+
+        // Register @font-face dynamically for a specific file under public/fonts/{folder}/{file}
+        const _registeredFontFaces = {};
+        function sanitizeKey(s) {
+            return String(s || '').replace(/[^a-z0-9\-_]+/gi, '-').toLowerCase();
+        }
+
+        function _formatFromExtension(fileName) {
+            if (!fileName) return 'truetype';
+            const ext = String(fileName).split('.').pop().toLowerCase();
+            if (ext === 'woff2') return 'woff2';
+            if (ext === 'woff') return 'woff';
+            if (ext === 'otf') return 'opentype';
+            return 'truetype';
+        }
+
+        function registerFontFace(folderName, fileName, cssWeight = '400', cssStyle = 'normal', displayFamily = null) {
+            if (!folderName) return null;
+
+            // Prefer using filename (without extension) as part of generated family so it matches server embedding
+            let genFamily;
+            if (fileName && /\.(ttf|otf|woff2?|woff)$/i.test(fileName)) {
+                const base = sanitizeKey(folderName);
+                const filenameBase = sanitizeKey(fileName.replace(/\.[^.]+$/, ''));
+                genFamily = `${base}-${filenameBase}`;
+            } else {
+                // fallback: use folder + weight
+                const base = sanitizeKey(folderName);
+                genFamily = `${base}-${sanitizeKey(cssWeight)}`;
+            }
+
+            if (_registeredFontFaces[genFamily]) return genFamily;
+
+            // If no actual file provided, nothing to register
+            if (!fileName || !/\.(ttf|otf|woff2?|woff)$/i.test(fileName)) return null;
+
+            const url = `/fonts/${encodeURIComponent(folderName)}/${encodeURIComponent(fileName)}`;
+            const format = _formatFromExtension(fileName);
+            const style = document.createElement('style');
+            style.type = 'text/css';
+            style.textContent = `
+                @font-face {
+                    font-family: '${genFamily}';
+                    src: url('${url}') format('${format}');
+                    font-weight: ${cssWeight};
+                    font-style: ${cssStyle};
+                    font-display: swap;
+                }
+            `;
+            document.head.appendChild(style);
+            _registeredFontFaces[genFamily] = true;
+            return genFamily;
+        }
+
+        // Fetch available weights from server endpoint; fallback to Google Fonts parse
+        async function fetchWeightsForFont(fontFamily) {
+            const weightSelect = document.getElementById('fontWeight');
+            weightSelect.innerHTML = '';
+
+            if (!fontFamily) {
+                const opt = new Option('Regular', '400');
+                // do not set dataset.file when we don't have an actual font file
+                opt.dataset.cssWeight = '400';
+                opt.dataset.folder = fontFamily;
+                opt.dataset.style = 'normal';
+                weightSelect.appendChild(opt);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/fonts/${encodeURIComponent(fontFamily)}/weights`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(item => {
+                            const file = item.file || item.filename || item.name || item;
+                            const cssWeight = item.key || item.cssWeight || item.weight || '400';
+                            const label = item.label || weightLabel(cssWeight) || file;
+
+                            const opt = new Option(label, file);
+                            // only treat `file` as real filename when it looks like a font file
+                            opt.dataset.file = /\.(ttf|otf|woff2?|woff)$/i.test(String(file)) ? String(file) : '';
+                            opt.dataset.cssWeight = cssWeight;
+                            opt.dataset.key = item.key || cssWeight;
+                            opt.dataset.folder = fontFamily;
+                            opt.dataset.style = item.style || 'normal';
+                            weightSelect.appendChild(opt);
+                        });
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch weights from server:', e);
+            }
+
+            // Fallback: try to parse Google Fonts link if exists
+            const linkElement = document.querySelector('link[href*="fonts.googleapis.com/css2"]');
+            if (linkElement) {
+                try {
+                    const url = new URL(linkElement.href);
+                    const families = url.searchParams.get('family');
+                    if (families) {
+                        const map = {};
+                        families.split('&').forEach(familyParam => {
+                            const parts = familyParam.split(':');
+                            const ff = parts[0].replace(/\+/g, ' ');
+                            let weights = ['400'];
+                            if (parts.length > 1 && parts[1].startsWith('wght@')) {
+                                weights = parts[1].substring(5).split(';');
+                            }
+                            map[ff] = weights;
+                        });
+                        const available = map[fontFamily] || ['400'];
+                        available.forEach(w => {
+                            const opt = new Option(weightLabel(w), w);
+                            // no real filename in Google Fonts fallback; leave dataset.file empty
+                            opt.dataset.file = '';
+                            opt.dataset.cssWeight = w;
+                            opt.dataset.folder = fontFamily;
+                            opt.dataset.style = 'normal';
+                            weightSelect.appendChild(opt);
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Failed parsing Google Fonts URL', e);
+                }
+            }
+
+            // Final fallback: standard four options
+            ['400','500','600','700'].forEach(w => {
+                const opt = new Option(weightLabel(w), w);
+                // fallback weights without real files; don't set dataset.file
+                opt.dataset.file = '';
+                opt.dataset.cssWeight = w;
+                opt.dataset.folder = fontFamily;
+                opt.dataset.style = 'normal';
+                weightSelect.appendChild(opt);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const fontFamilySelect = document.getElementById('fontFamily');
+            const elementTextInput = document.getElementById('elementText');
+
+            // Initial populate based on current selected font
+            fetchWeightsForFont(fontFamilySelect.value);
+
+            fontFamilySelect.addEventListener('change', function() {
+                const selectedFont = fontFamilySelect.value;
+                if (elementTextInput) {
+                    elementTextInput.style.fontFamily = `'${selectedFont}', Arial, sans-serif`;
+                }
+                if (selectedElement && selectedElement.type === 'text') {
+                    // when editing an element in-place, update its display name but don't overwrite generated family until weight selected
+                    selectedElement.font.family = selectedFont;
+                    updatePreview();
+                }
+                fetchWeightsForFont(selectedFont);
+            });
+
+            // when weight changes, register font-face for preview immediately
+            document.getElementById('fontWeight').addEventListener('change', function() {
+                const familyDisplay = document.getElementById('fontFamily').value;
+                const opt = this.options[this.selectedIndex];
+                // use dataset.file only when it's a real filename; otherwise null
+                const file = opt ? (opt.dataset.file && /\.(ttf|otf|woff2?|woff)$/i.test(opt.dataset.file) ? opt.dataset.file : null) : null;
+                const cssWeight = opt ? (opt.dataset.cssWeight || opt.value) : '400';
+                const cssStyle = document.getElementById('fontStyle').value || 'normal';
+                const generated = file ? registerFontFace(familyDisplay, file, cssWeight, cssStyle, familyDisplay) : null;
+
+                // if editing an existing element, update its generated family so preview updates
+                if (selectedElement && selectedElement.type === 'text') {
+                    selectedElement.font.previewFamily = generated || familyDisplay;
+                    // only store weightFile when we have an actual file
+                    selectedElement.font.weightFile = file ? file : null;
+                    selectedElement.font.weight = String(cssWeight);
+                    selectedElement.font.style = cssStyle;
+                    updatePreview();
+                }
+            });
+        });
     </script>
 </body>
 </html>
