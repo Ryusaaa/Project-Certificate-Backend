@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SertifikatPesertaController extends Controller
 {
@@ -30,7 +31,8 @@ class SertifikatPesertaController extends Controller
                 'recipient_name' => 'required|string',
                 'certificate_number' => 'required|string',
                 'date' => 'required|date',
-                'merchant_id' => 'required|exists:merchants,id'
+                'merchant_id' => 'required|exists:merchants,id',
+                'instruktur' => 'nullable|string'
             ]);
 
             // Get template
@@ -51,7 +53,9 @@ class SertifikatPesertaController extends Controller
             $elements = $this->prepareElements($template->elements, [
                 '{NAMA}' => $validated['recipient_name'],
                 '{NOMOR}' => $validated['certificate_number'],
-                '{TANGGAL}' => $dateText
+                '{TANGGAL}' => $dateText,
+                '{INSTRUKTUR}' => $template->instruktur ?? '',
+                '{QRCODE}' => $this->getQRCodeFromCertificate($validated['certificate_number']) ?? ''
             ]);
 
             // Prepare PDF data
@@ -113,7 +117,8 @@ class SertifikatPesertaController extends Controller
                 'recipient_name' => 'required|string',
                 'certificate_number' => 'required|string',
                 'date' => 'required|date',
-                'merchant_id' => 'required|exists:merchants,id'
+                'merchant_id' => 'required|exists:merchants,id',
+                'instruktur' => 'nullable|string'
             ]);
 
             // Get template
@@ -134,7 +139,9 @@ class SertifikatPesertaController extends Controller
             $elements = $this->prepareElements($template->elements, [
                 '{NAMA}' => $validated['recipient_name'],
                 '{NOMOR}' => $validated['certificate_number'],
-                '{TANGGAL}' => $dateText
+                '{TANGGAL}' => $dateText,
+                '{INSTRUKTUR}' => $template->instruktur ?? '',
+                '{QRCODE}' => $this->getQRCodeFromCertificate($validated['certificate_number']) ?? ''
             ]);
 
             // Prepare PDF data
@@ -174,11 +181,149 @@ class SertifikatPesertaController extends Controller
     private function prepareElements($elements, $replacements)
     {
         return array_map(function($element) use ($replacements) {
-            if ($element['type'] === 'text' && isset($element['placeholderType']) && $element['placeholderType'] !== 'custom') {
-                $element['text'] = strtr($element['text'], $replacements);
+            if (isset($element['placeholderType']) && $element['placeholderType'] !== 'custom') {
+                if ($element['type'] === 'text') {
+                    $element['text'] = strtr($element['text'], $replacements);
+                } elseif ($element['type'] === 'qrcode' && isset($replacements['{QRCODE}'])) {
+                    $element['text'] = $replacements['{QRCODE}'];
+                }
             }
             return $element;
         }, $elements);
+    }
+
+    private function getQRCodeFromCertificate($certificateNumber)
+    {
+        try {
+            Log::info('Starting QR code generation for certificate number: ' . $certificateNumber);
+            
+            // Debug: Output detailed info about the search
+            Log::info('Certificate search details:', [
+                'searched_number' => $certificateNumber,
+                'length' => strlen($certificateNumber),
+                'raw_bytes' => bin2hex($certificateNumber),
+                'special_chars' => preg_replace('/[^\/\-_]/', '', $certificateNumber)
+            ]);
+            
+            // Debug: Log all certificate numbers for comparison
+            $allCerts = CertificateDownload::select('certificate_number')->get();
+            Log::info('Available certificates:', $allCerts->map(function($cert) {
+                return [
+                    'number' => $cert->certificate_number,
+                    'length' => strlen($cert->certificate_number),
+                    'raw_bytes' => bin2hex($cert->certificate_number)
+                ];
+            })->toArray());
+            
+            // Try exact match first (PostgreSQL)
+            $certificateDownload = CertificateDownload::where('certificate_number', $certificateNumber)->first();
+            
+            // If not found, try with cleaned string (remove any invisible characters)
+            if (!$certificateDownload) {
+                Log::info('Trying with cleaned string...');
+                $cleanNumber = preg_replace('/[\x00-\x1F\x7F\xA0]/u', '', $certificateNumber);
+                $certificateDownload = CertificateDownload::where('certificate_number', $cleanNumber)->first();
+            }
+            
+            // If still not found, try case-insensitive match (PostgreSQL)
+            if (!$certificateDownload) {
+                Log::info('Trying case-insensitive match...');
+                $certificateDownload = CertificateDownload::whereRaw('certificate_number ILIKE ?', [$certificateNumber])->first();
+            }
+            
+            // If still not found, try with trimmed values
+            if (!$certificateDownload) {
+                Log::info('Trying with trimmed values...');
+                $trimmedNumber = trim($certificateNumber);
+                $certificateDownload = CertificateDownload::whereRaw('TRIM(certificate_number) = ?', [$trimmedNumber])->first();
+            }
+
+            if (!$certificateDownload) {
+                // Log all certificates for comparison
+                $existingCerts = CertificateDownload::get();
+                Log::error('Certificate comparison:', [
+                    'searched_for' => [
+                        'value' => $certificateNumber,
+                        'length' => strlen($certificateNumber),
+                        'bytes' => bin2hex($certificateNumber),
+                        'cleaned' => $cleanNumber
+                    ],
+                    'available_certs' => $existingCerts->map(function($cert) {
+                        return [
+                            'value' => $cert->certificate_number,
+                            'length' => strlen($cert->certificate_number),
+                            'bytes' => bin2hex($cert->certificate_number)
+                        ];
+                    })
+                ]);
+                Log::error('Certificate download not found for number: ' . $certificateNumber);
+                return '';
+            }
+            
+            Log::info('Found CertificateDownload:', [
+                'id' => $certificateDownload->id,
+                'token' => $certificateDownload->token,
+                'certificate_number' => $certificateDownload->certificate_number,
+                'search_term' => $certificateNumber
+            ]);
+
+            // Generate QR code filename based on certificate token
+            $qrCodeFileName = 'qrcodes/' . $certificateDownload->token . '.svg';
+            
+            // Check if QR code already exists in storage
+            if (Storage::disk('public')->exists($qrCodeFileName)) {
+                Log::info('Found existing QR code file: ' . $qrCodeFileName);
+                $existingQr = Storage::disk('public')->get($qrCodeFileName);
+                Log::info('Existing QR code loaded, length: ' . strlen($existingQr));
+                return $existingQr;
+            }
+            
+            Log::info('No existing QR code found, will generate new one');
+
+            // Generate QR Code with token
+            $qrCodeContent = env('FRONTEND_URL') . '/sertifikat-templates/download/' . $certificateDownload->token;
+            Log::info('Generating QR code with URL: ' . $qrCodeContent);
+            
+            $qrCodeSvg = QrCode::size(200)
+                ->format('svg')
+                ->generate($qrCodeContent);
+            
+            Log::info('QR code generated, SVG length: ' . strlen($qrCodeSvg));
+            
+            // Save generated QR code
+            $qrCodeFileName = 'qrcodes/' . $certificateDownload->token . '.svg';
+            Log::info('Saving QR code to: ' . $qrCodeFileName);
+            
+            // Ensure directory exists
+            Storage::disk('public')->makeDirectory('qrcodes');
+            Log::info('QR code directory created/verified');
+            
+            // Save QR code
+            $saved = Storage::disk('public')->put($qrCodeFileName, $qrCodeSvg);
+            Log::info('QR code saved to storage: ' . ($saved ? 'Success' : 'Failed'));
+            
+            // Update UserCertificate if exists
+            $userCertificate = UserCertificate::where('certificate_download_id', $certificateDownload->id)->first();
+            if ($userCertificate && $saved) {
+                $userCertificate->update([
+                    'qrcode_path' => $qrCodeFileName
+                ]);
+                Log::info('UserCertificate updated with QR code path');
+            }
+            
+            // Verify QR code content
+            if (empty($qrCodeSvg)) {
+                Log::error('Generated QR code is empty');
+                return '';
+            }
+            
+            Log::info('Successfully returning QR code SVG');
+            return $qrCodeSvg;
+        } catch (\Exception $e) {
+            Log::error('Error generating QR code: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return '';
+        }
     }
 
     private function generateCertificateNumber($template, $format = null) 
@@ -191,19 +336,28 @@ class SertifikatPesertaController extends Controller
                 throw new \Exception('Format nomor sertifikat belum diatur');
             }
 
-            // Find all groups of X's in the format
-            preg_match_all('/X+/', $format, $matches, PREG_OFFSET_CAPTURE);
+            // Find sequence of X's that come before a separator or end of string
+            // This will match X's that are:
+            // 1. At the start of the string and followed by a separator
+            // 2. After a separator and followed by another separator
+            // 3. At the end of string after a separator
+            preg_match_all('/(?:^|[\/\-_])([X]+)(?=[\/\-_]|$)/', $format, $matches, PREG_OFFSET_CAPTURE);
             
-            if (empty($matches[0])) {
-                throw new \Exception('Format harus mengandung minimal satu X sebagai placeholder nomor');
+            if (empty($matches[1])) {
+                throw new \Exception('Format harus mengandung minimal satu sequence X yang valid (sebelum pemisah / - _)');
             }
 
-            // Get the first sequence of X's as the increment placeholder
-            $placeholder = $matches[0][0][0];
+            // Get the first valid sequence of X's as the increment placeholder
+            $placeholder = $matches[1][0][0];
+            $placeholderPosition = $matches[1][0][1];
             $placeholderLength = strlen($placeholder);
-
-            // Create a pattern that matches only the first X sequence
-            $pattern = '/^' . str_repeat('X', $placeholderLength) . '/';
+            
+            Log::info('Found placeholder', [
+                'placeholder' => $placeholder,
+                'position' => $placeholderPosition,
+                'length' => $placeholderLength,
+                'format' => $format
+            ]);
             
             // Get next number from template
             $nextNumber = $template->last_certificate_number + 1;
@@ -213,11 +367,13 @@ class SertifikatPesertaController extends Controller
                 'last_certificate_number' => $nextNumber
             ]);
 
-            // Format the number with leading zeros based on first X sequence length
+            // Format the number with leading zeros
             $formattedNumber = str_pad($nextNumber, $placeholderLength, '0', STR_PAD_LEFT);
             
-            // Replace only the first sequence of X's with the number
-            $certificateNumber = preg_replace($pattern, $formattedNumber, $format, 1);
+            // Replace the X sequence at the exact position
+            $beforeX = substr($format, 0, $placeholderPosition);
+            $afterX = substr($format, $placeholderPosition + $placeholderLength);
+            $certificateNumber = $beforeX . $formattedNumber . $afterX;
 
             return $certificateNumber;
         } catch (\Exception $e) {
@@ -335,7 +491,8 @@ class SertifikatPesertaController extends Controller
                 'recipients.*.date' => 'required|date',
                 'recipients.*.email' => 'required|email',
                 'certificate_number_format' => 'nullable|string',
-                'merchant_id' => 'required'
+                'merchant_id' => 'required',
+                'instruktur' => 'nullable|string'
             ]);
 
             // Get template
@@ -358,11 +515,65 @@ class SertifikatPesertaController extends Controller
                 // Generate certificate number
                 $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format'] ?? null);
 
-                // Process template elements for each recipient
+                // Generate unique filename and token for each recipient
+                $filename = sprintf(
+                    'sertifikat_%s_%s_%s.pdf',
+                    Str::slug($recipient['recipient_name']),
+                    Str::slug($certificateNumber),
+                    now()->format('Ymd_His')
+                );
+                
+                $downloadToken = Str::random(12); // Generate secure token
+
+                // Create download record first
+                $download = $template->createDownload([
+                    'token' => $downloadToken,
+                    'filename' => $filename,
+                    'recipient_name' => $recipient['recipient_name'],
+                    'certificate_number' => $certificateNumber,
+                    'user_id' => $request->user() ? $request->user()->id : null,
+                    'expires_at' => now()->addDays(30) // Token berlaku 30 hari
+                ]);
+
+                // Find or create user certificate
+                $user = User::where('email', $recipient['email'])->first();
+                $userCertificate = null;
+                if ($user) {
+                    Log::info('Creating UserCertificate for user:', [
+                        'user_id' => $user->id,
+                        'download_id' => $download->id,
+                        'merchant_id' => $validated['merchant_id']
+                    ]);
+
+                    $userCertificate = UserCertificate::create([
+                        'user_id' => $user->id,
+                        'certificate_download_id' => $download->id,
+                        'assigned_at' => now(),
+                        'status' => 'active',
+                        'merchant_id' => $validated['merchant_id']
+                    ]);
+
+                    if (!$userCertificate) {
+                        Log::error('Failed to create UserCertificate');
+                    } else {
+                        Log::info('UserCertificate created successfully with ID: ' . $userCertificate->id);
+                    }
+                } else {
+                    Log::warning('User not found for email: ' . $recipient['email']);
+                }
+
+                // Refresh to ensure we have the latest data
+                if ($userCertificate) {
+                    $userCertificate->refresh();
+                }
+
+                // Now process template elements after certificate record exists
                 $elements = $this->prepareElements($template->elements, [
                     '{NAMA}' => $recipient['recipient_name'],
                     '{NOMOR}' => $certificateNumber,
-                    '{TANGGAL}' => $dateText
+                    '{TANGGAL}' => $dateText,
+                    '{INSTRUKTUR}' => $template->instruktur ?? '',
+                    '{QRCODE}' => $this->getQRCodeFromCertificate($certificateNumber) ?? ''
                 ]);
 
                 // Prepare PDF data
@@ -378,42 +589,9 @@ class SertifikatPesertaController extends Controller
                 $pdf = PDF::loadView('sertifikat.template', $data)
                          ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
 
-                // Generate unique filename and token for each recipient
-                $filename = sprintf(
-                    'sertifikat_%s_%s_%s.pdf',
-                    Str::slug($recipient['recipient_name']),
-                    Str::slug($certificateNumber), // Changed from recipient['certificate_number']
-                    now()->format('Ymd_His')
-                );
-                
-                $downloadToken = Str::random(12); // Generate secure token
-                
                 // Save to storage
                 $pdfPath = 'certificates/generated/' . $filename;
                 Storage::disk('public')->put($pdfPath, $pdf->output());
-
-                // Create download record
-                $download = $template->createDownload([
-                    'token' => $downloadToken,
-                    'filename' => $filename,
-                    'recipient_name' => $recipient['recipient_name'],
-                    'certificate_number' => $certificateNumber,
-                    'user_id' => $request->user() ? $request->user()->id : null,
-                    'expires_at' => now()->addDays(30) // Token berlaku 30 hari
-                ]);
-
-                // Find user by email and assign certificate
-                $user = User::where('email', $recipient['email'])->first();
-                if ($user) {
-                    UserCertificate::create([
-                        'user_id' => $user->id,
-                        'certificate_download_id' => $download->id,
-                        'assigned_at' => now(),
-                        'status' => 'active'
-                    ]);
-                } else {
-                    Log::warning('User not found for email: ' . $recipient['email']);
-                }
 
                 // Send email with certificate
                 try {

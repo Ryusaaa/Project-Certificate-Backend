@@ -12,10 +12,10 @@
         "normal": "georgia_normal_c66384c0e6d4402d53d8a0ec784f3560"
     },
     "league spartan": {
-        "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_normal_2aa0a63cfeac9e79efa9e06939b44e5e",
+        "normal": "league_spartan_normal_2aa0a63cfeac9e79efa9e06939b44e5e",
         "500": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_500_602b3cd79809b633284facdc29a34eb2",
         "600": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_600_e3841366408d734dbbc4d3492d53f54f",
-        "bold": "league_spartan_bold_4a563522b134f79df56c939283c9f008"
+        "bold": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_spartan_bold_4a563522b134f79df56c939283c9f008"
     },
     "playfair display": {
         "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_normal_20bf3645e0f91b9eda550d5f6d97a909",
@@ -28,14 +28,14 @@
         "italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_italic_d467bbb6b9692d832f64d28fa17866cf"
     },
     "poppins": {
-        "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_normal_5e882467ad8772e64689184bdb891eaa",
-        "500": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_cc59382aa55ed4c4f173dfc4fc24be81",
-        "500_italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_italic_d5b8bf10cc9b5ce7db91de4bb4470011",
-        "600": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_f8f1acc4953dfb03f114a9ad8b3b0517",
-        "600_italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_italic_445fc62bdcf0fba84b54a06acec0a856",
-        "bold": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_4f0fbb182eb5eb68b2ece4ffed969ed1",
-        "bold_italic": "poppins_bold_italic_6008366665026896ac834a5d1145fc7c",
-        "italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_italic_6de0172381f6af71a115ab3443cc83d8"
+        "normal": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_normal_5e882467ad8772e64689184bdb891eaa",
+        "500": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_cc59382aa55ed4c4f173dfc4fc24be81",
+        "500_italic": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_italic_d5b8bf10cc9b5ce7db91de4bb4470011",
+        "600": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_f8f1acc4953dfb03f114a9ad8b3b0517",
+        "600_italic": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_italic_445fc62bdcf0fba84b54a06acec0a856",
+        "bold": "poppins_bold_4f0fbb182eb5eb68b2ece4ffed969ed1",
+        "bold_italic": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_italic_6008366665026896ac834a5d1145fc7c",
+        "italic": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_italic_6de0172381f6af71a115ab3443cc83d8"
     },
     "alice": {
         "normal": "alice_normal_6448ec189d8c9f5b9a0134787934824b"
@@ -112,9 +112,9 @@
         "normal": "yeseva_one_normal_1a35219b52bef601b3ebed5854f7eac6"
     },
     "montserrat": {
-        "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_normal_d196b4155228343ce6584658ed0d72f0",
-        "italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_italic_f3cc90836e2c7ebf5d085fc1c4cd0215",
-        "bold": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_bold_7fb470f35eaae25719ba6418df531881",
-        "bold_italic": "montserrat_bold_italic_accdd10c238c46fdc950356d0c1c0bdd"
+        "normal": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_normal_d196b4155228343ce6584658ed0d72f0",
+        "italic": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_italic_f3cc90836e2c7ebf5d085fc1c4cd0215",
+        "bold": "montserrat_bold_7fb470f35eaae25719ba6418df531881",
+        "bold_italic": "C:\\Vy Project\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_bold_italic_accdd10c238c46fdc950356d0c1c0bdd"
     }
 }
