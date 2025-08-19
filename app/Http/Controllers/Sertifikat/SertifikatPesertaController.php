@@ -31,7 +31,6 @@ class SertifikatPesertaController extends Controller
                 'recipient_name' => 'required|string',
                 'certificate_number' => 'required|string',
                 'date' => 'required|date',
-                'merchant_id' => 'required|exists:merchants,id',
                 'instruktur' => 'nullable|string'
             ]);
 

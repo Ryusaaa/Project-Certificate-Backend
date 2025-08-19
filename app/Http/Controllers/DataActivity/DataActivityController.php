@@ -131,6 +131,7 @@ class DataActivityController extends Controller
                 'activity_type_id' => $item->activity_type_id,
                 'activity_type_name' => $item->activityType->type_name ?? null,
                 'description' => $item->description,
+                'status' => $item->status,
                 'instruktur_id' => $item->instruktur_id,
                 'instruktur_name' => $item->instruktur->name ?? null,
                 'total_peserta' => $item->peserta->count(),
@@ -204,6 +205,7 @@ class DataActivityController extends Controller
             'time_end' => $dataActivity->time_end,
             'activity_type_name' => $dataActivity->activityType->type_name ?? null,
             'description' => $dataActivity->description,
+            'status' => $dataActivity->status,
             'instruktur_name' => $dataActivity->instruktur->name ?? null,
             'peserta' => $dataActivity->peserta,
             'total_peserta' => $dataActivity->peserta->count(),
@@ -286,6 +288,9 @@ class DataActivityController extends Controller
             ]);
 
             $dataActivity = DataActivity::findOrFail($activityId);
+
+            $dataActivity->status = "Pending";
+            $dataActivity->save();
 
             // Ambil admin yang login
             $admin_id = (int) $validated['admin_id'];
@@ -419,7 +424,11 @@ class DataActivityController extends Controller
             DB::beginTransaction();
 
             $dataActivity = DataActivity::findOrFail($activityId);
-            
+
+            $dataActivity->sertifikat_id = $validated['sertifikat_id'];
+            $dataActivity->status = "Aktif";
+            $dataActivity->save();
+
             // Set all templates to rejected first
             $dataActivity->sertifikat()->updateExistingPivot(
                 $dataActivity->sertifikat()->pluck('sertifikats.id'),
@@ -435,6 +444,12 @@ class DataActivityController extends Controller
             // Update sertifikat_id di data activity agar template terpasang
             $dataActivity->sertifikat_id = $validated['sertifikat_id'];
             $dataActivity->save();
+
+            // Hapus data pivot yang berstatus rejected
+            DB::table('certificate_data_activity')
+                ->where('data_activity_id', $activityId)
+                ->where('status', 'rejected')
+                ->delete();
 
             DB::commit();
 
