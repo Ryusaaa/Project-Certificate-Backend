@@ -107,6 +107,9 @@ Route::get('/phpinfo', function() {
     phpinfo();
 });
 
+// Return available font weight files for a font family under public/fonts/{font}
+Route::get('fonts/{font}/weights', [SertifikatTemplateController::class, 'fontWeights']);
+
 // Fallback route, harus selalu di paling bawah
 Route::get('{any}', function () {
     return response()->json(['message' => 'Not Found'], 404);
