@@ -191,9 +191,9 @@ class SertifikatTemplateController extends Controller
             Log::info('Image uploaded successfully', ['path' => $path, 'url' => $url]);
 
             return response()->json([
+                'message' => 'Image uploaded successfully',
                 'status' => 'success',
-                'url' => $url,
-                'message' => 'Image uploaded successfully'
+                'url' => Storage::url($path)
             ]);
 
         } catch (ValidationException $e) {

@@ -6,19 +6,11 @@
     <link href="{{ asset('css/all-fonts.css') }}" rel="stylesheet">
     <style>
         @php
-            // Helper function to get font base64
-            function getFontBase64($fontPath) {
-                if (file_exists($fontPath)) {
-                    return base64_encode(file_get_contents($fontPath));
-                }
-                // Log or handle error if font file not found
-                error_log("Font file not found: " . $fontPath);
-                return null;
-            }
+            use App\Helpers\FontHelper;
 
             // --- STRUKTUR FONT BARU ---
             // Struktur ini lebih detail, memisahkan file untuk setiap kombinasi weight dan style.
-            // Anda perlu memastikan nama file di sini sesuai dengan file .ttf di folder public/fonts/ Anda.
+            // Font mapping configurations
             $fontMappings = [
                 // Contoh untuk Poppins
                 'Poppins' => [
@@ -108,6 +100,37 @@
             box-sizing: border-box;
         }
 
+            .element-qrcode {
+                background-color: white !important;
+                border: 0.75pt solid rgba(0,0,0,0.1) !important;
+                border-radius: 2pt !important;
+                z-index: 100 !important;
+                display: block !important;
+                position: absolute !important;
+                overflow: hidden !important;
+                transform-origin: center !important;
+                transform: translate(0, 0) !important;
+                padding: 4pt !important;
+            }
+
+            .element-qrcode img {
+                width: 100% !important;
+                height: 100% !important;
+                display: block !important;
+                background: white !important;
+                object-fit: contain !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                image-rendering: crisp-edges !important;
+                image-rendering: pixelated !important;
+            }        @media print {
+            .element-qrcode {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+        }
+
         /* --- Muat hanya font yang dipakai oleh elemen (embed base64) --- */
             @php
             // Kumpulkan daftar font yang diperlukan dari elemen
@@ -180,8 +203,6 @@
                 }
             }
 
-            // sanitize helper for css family name
-            function sanit($s) { return preg_replace('/[^a-z0-9\-_]+/i','-', $s); }
         @endphp
 
         @foreach($requiredFonts as $k => $info)
@@ -239,14 +260,14 @@
 
                 if ($resolvedFile) {
                     $fontPath = public_path('fonts/'.($info['folder'] ?? '').'/'.$resolvedFile);
-                    $fontBase64 = getFontBase64($fontPath);
-                    $generatedFamily = sanit($info['folder']) . '-' . sanit(pathinfo($resolvedFile, PATHINFO_FILENAME));
+                    $fontBase64 = FontHelper::getFontBase64($fontPath);
+                    $generatedFamily = FontHelper::sanitizeFontName($info['folder']) . '-' . FontHelper::sanitizeFontName(pathinfo($resolvedFile, PATHINFO_FILENAME));
 
                     // detect whether the resolved file appears to be an italic variant
                     $isItalicFile = (bool) preg_match('/italic|oblique|ital/i', $resolvedFile);
                 } else {
                     $fontBase64 = null;
-                    $generatedFamily = sanit($info['folder']) . '-' . sanit(pathinfo($info['file'] ?? '', PATHINFO_FILENAME));
+                    $generatedFamily = FontHelper::sanitizeFontName($info['folder']) . '-' . FontHelper::sanitizeFontName(pathinfo($info['file'] ?? '', PATHINFO_FILENAME));
                     $isItalicFile = false;
                 }
 
@@ -326,8 +347,38 @@
         .element {
             position: absolute;
             z-index: 2;
-            white-space: nowrap;
-            line-height: 1; /* Set line-height ke 1 untuk konsistensi */
+            white-space: pre-wrap;  /* Changed to pre-wrap to preserve formatting */
+            line-height: 1.2;
+            transform-origin: top left;
+        }
+
+        .element-text {
+            display: inline-block;
+            max-width: 800px;  /* Added max-width for text wrapping */
+            word-wrap: break-word;  /* Enable word wrapping */
+        }
+
+        .element-qrcode {
+            display: block;
+            background: white;
+            padding: 4px;
+            border-radius: 2px;
+            position: absolute;
+            box-shadow: 0 0 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .element-qrcode > div {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+        }
+
+        .element-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -348,7 +399,68 @@
 
         @if(isset($elements) && is_array($elements))
             @foreach($elements as $element)
-                @if($element['type'] === 'text')
+                @if($element['type'] === 'qrcode')
+                    @php
+                        $x = $element['x'];
+                        $y = $element['y'];
+                        $width = isset($element['width']) ? $element['width'] : 120;
+                        $height = isset($element['height']) ? $element['height'] : 120;
+                        $qrStyle = "left: {$x}pt; top: {$y}pt; width: {$width}pt; height: {$height}pt;";
+                        
+                        // Get QR code content from element
+                        $qrContent = isset($element['qrcode']) ? $element['qrcode'] : '';
+                        
+                        \Illuminate\Support\Facades\Log::debug('Processing QR code:', [
+                            'position' => "{$x}pt, {$y}pt",
+                            'size' => "{$width}pt x {$height}pt",
+                            'has_content' => !empty($qrContent),
+                            'content_length' => strlen($qrContent),
+                            'has_svg' => strpos($qrContent, '<svg') !== false,
+                            'is_base64' => strpos($qrContent, 'data:image/svg+xml;base64,') === 0
+                        ]);
+                    @endphp
+                    
+                    <div class="element element-qrcode" style="{{ $qrStyle }}">
+                        @if(!empty($qrContent))
+                            <img src="{{ $qrContent }}" alt="QR Code" style="width: 100%; height: 100%; display: block; image-rendering: pixelated;">
+                            @php
+                                \Illuminate\Support\Facades\Log::info('QR code rendered from image data', [
+                                    'style' => $qrStyle,
+                                    'has_content' => true,
+                                    'content_length' => strlen($qrContent),
+                                    'is_data_uri' => strpos($qrContent, 'data:image/png;base64,') === 0
+                                ]);
+                            @endphp
+                        @else
+                            @php
+                                $certificateNumber = isset($element['content']) ? $element['content'] : null;
+                                if ($certificateNumber) {
+                                    $qrContent = app(\App\Http\Controllers\Sertifikat\SertifikatPesertaController::class)
+                                        ->getQRCodeFromCertificate($certificateNumber);
+                                }
+                            @endphp
+                            @if(!empty($qrContent))
+                                <img src="{{ $qrContent }}" alt="QR Code" style="width: 100%; height: 100%; display: block; image-rendering: pixelated;">
+                                @php
+                                    \Illuminate\Support\Facades\Log::info('QR code rendered from certificate number', [
+                                        'certificate_number' => $certificateNumber,
+                                        'has_content' => true,
+                                        'content_length' => strlen($qrContent)
+                                    ]);
+                                @endphp
+                            @else
+                                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border: 1px dashed #ddd; font-size: 10pt; color: #666;">
+                                    QR tidak ditemukan
+                                </div>
+                                @php
+                                    \Illuminate\Support\Facades\Log::warning('No QR code content available', [
+                                        'certificate_number' => $certificateNumber
+                                    ]);
+                                @endphp
+                            @endif
+                        @endif
+                    </div>
+                @elseif($element['type'] === 'text')
                         @php
                             // Use saved folder + weightFile to build generated CSS family name
                             $fontFolder = isset($element['font']['folder']) ? $element['font']['folder'] : null;
@@ -363,7 +475,7 @@
 
                             // compute generated family that matches client-side registerFontFace
                             if ($fontFolder && $fontFile) {
-                                $generatedFamily = preg_replace('/[^a-z0-9\-_]+/i','-', $fontFolder) . '-' . preg_replace('/[^a-z0-9\-_]+/i','-', pathinfo($fontFile, PATHINFO_FILENAME));
+                                $generatedFamily = FontHelper::sanitizeFontName($fontFolder) . '-' . FontHelper::sanitizeFontName(pathinfo($fontFile, PATHINFO_FILENAME));
                             } else {
                                 $generatedFamily = isset($element['font']['family']) ? $element['font']['family'] : 'Arial';
                             }

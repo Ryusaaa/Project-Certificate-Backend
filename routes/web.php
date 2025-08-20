@@ -12,6 +12,7 @@ use App\Http\Controllers\Sertifikat\SertifikatTemplateController;
 use App\Http\Controllers\Sertifikat\SertifikatPesertaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 /*
@@ -74,7 +75,7 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::put('/{id}', [SertifikatTemplateController::class, 'update']);
     Route::delete('/{id}', [SertifikatTemplateController::class, 'destroy']);
     
-    Route::post('/upload-image', [SertifikatTemplateController::class, 'uploadImage']);
+    Route::post('/upload-image', [SertifikatTemplateController::class, 'uploadImage'])->name('sertifikat.upload-image');
 
     Route::prefix('sertifikat-templates/{id}')->group(function () {
         Route::get('/shapes', [SertifikatTemplateController::class, 'getShapes']);
@@ -93,6 +94,26 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::get('/users/{userId}/certificates', [SertifikatPesertaController::class, 'getUserCertificates']);
 });
 
+Route::get('/latest-qrcode', function () {
+    // Get latest QR code from storage
+    $files = Storage::disk('public')->files('qrcodes');
+    
+    if (empty($files)) {
+        return response()->json(['error' => 'No QR codes found'], 404);
+    }
+
+    // Sort files by modification time, newest first
+    usort($files, function($a, $b) {
+        return Storage::disk('public')->lastModified($b) - Storage::disk('public')->lastModified($a);
+    });
+
+    // Get the newest file
+    $latestQR = $files[0];
+    
+    // Return the SVG content
+    $content = Storage::disk('public')->get($latestQR);
+    return response($content)->header('Content-Type', 'image/svg+xml');
+});
 
 // --- DEBUG & FALLBACK ROUTES ---
 Route::get('/debug-cors', function (Request $request) {
