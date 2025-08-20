@@ -60,7 +60,7 @@ class SertifikatPesertaController extends Controller
                 'certificate_number' => 'required|string',
                 'date' => 'required|date',
                 'merchant_id' => 'required|exists:merchants,id',
-                'instruktur' => 'required|string'  // Memastikan instruktur wajib diisi
+                'instruktur' => 'nullable|string'
             ]);
 
             // Get template

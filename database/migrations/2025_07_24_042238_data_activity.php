@@ -26,6 +26,7 @@ return new class extends Migration
                   ->on('data_activity_types')
                   ->constrained();
             $table->text('description')->nullable();
+            $table->enum('status', ['Aktif', 'Pending', 'Tidak ada template'])->default('Tidak ada template');
             $table->dateTime('date')->nullable();
             $table->foreignId('instruktur_id')->nullable()->constrained('instrukturs');
             $table->time('time_start')->nullable();
