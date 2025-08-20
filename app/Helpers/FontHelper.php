@@ -13,4 +13,9 @@ class FontHelper
         error_log("Font file not found: " . $fontPath);
         return null;
     }
+
+    public static function sanitizeFontName($string)
+    {
+        return preg_replace('/[^a-z0-9\-_]+/i', '-', $string);
+    }
 }
