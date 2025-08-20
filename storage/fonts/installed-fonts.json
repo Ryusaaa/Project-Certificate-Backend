@@ -188,8 +188,8 @@
         "italic": "archivo_black_archivoblack_regular_italic_d7771aa01091957813896d4fbe37c368"
     },
     "times-new-roman-times-new-roman": {
-        "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/times_new_roman_times_new_roman_normal_93b79437cdebc07abceac09d543e2ada",
-        "italic": "times_new_roman_times_new_roman_italic_93b79437cdebc07abceac09d543e2ada"
+        "normal": "times_new_roman_times_new_roman_normal_93b79437cdebc07abceac09d543e2ada",
+        "italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/times_new_roman_times_new_roman_italic_93b79437cdebc07abceac09d543e2ada"
     },
     "brittany_2-brittany": {
         "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/brittany_2_brittany_normal_f3f91b5133ca46af19dc2c63c909ec73",
@@ -223,11 +223,20 @@
         "italic": "anonymous_pro_anonymouspro_regular_italic_8c95e7bdca7d0d3c211ca75e39bf1033"
     },
     "anton-anton-regular": {
-        "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/anton_anton_regular_normal_5d464d5aa4bfa24d68c03479ad909a0a",
-        "italic": "anton_anton_regular_italic_5d464d5aa4bfa24d68c03479ad909a0a"
+        "normal": "anton_anton_regular_normal_5d464d5aa4bfa24d68c03479ad909a0a",
+        "italic": "D:\\PKL\\SOD\\sertifikasi-online-diantara-backend\\storage\\fonts\/anton_anton_regular_italic_5d464d5aa4bfa24d68c03479ad909a0a"
     },
     "league_gothic-leaguegothic-regular-variablefont_wdth": {
         "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/league_gothic_leaguegothic_regular_variablefont_wdth_normal_0f02d4872fcc556589ea9c8c756b873d",
         "italic": "league_gothic_leaguegothic_regular_variablefont_wdth_italic_0f02d4872fcc556589ea9c8c756b873d"
+    },
+    "poppins-poppins-regular": {
+        "normal": "poppins_poppins_regular_normal_5e882467ad8772e64689184bdb891eaa"
+    },
+    "playfair_display-playfairdisplay-regular": {
+        "normal": "playfair_display_playfairdisplay_regular_normal_20bf3645e0f91b9eda550d5f6d97a909"
+    },
+    "breathing-breathing-personal-use-only": {
+        "normal": "breathing_breathing_personal_use_only_normal_d975a6a0330486be658cfdafb291fe38"
     }
 }

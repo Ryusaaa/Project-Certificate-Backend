@@ -147,7 +147,7 @@
                     $requestedFile = isset($f['weightFile']) ? $f['weightFile'] : null;
                     $style = isset($f['style']) ? $f['style'] : 'normal';
                     $weight = isset($f['cssWeight']) ? $f['cssWeight'] : (isset($f['weight']) ? $f['weight'] : '400');
-
+                    
                     $folderPath = public_path('fonts/'. $folder);
                     $resolvedFile = null;
 
