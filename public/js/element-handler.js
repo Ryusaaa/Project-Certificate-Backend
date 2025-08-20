@@ -8,49 +8,117 @@ function renderElements() {
     );
     existingElements.forEach((el) => el.remove());
 
+    // Ensure there's a container with fixed A4 dims inside preview
+    let container = previewContainer.querySelector('.preview-elements-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'preview-elements-container';
+        container.style.cssText = 'position:relative; width:842px; height:595px; transform-origin: top left; margin:0 auto;';
+        previewContainer.appendChild(container);
+    }
+
     // Render each element
     elements.forEach((element, index) => {
         const elementDiv = document.createElement("div");
         elementDiv.className = `element element-${element.type}`;
+        // keep both id and data-id for compatibility
         elementDiv.id = element.id;
+        elementDiv.dataset.id = element.id;
         elementDiv.dataset.type = element.type;
 
-        // Set position with transform and z-index
+        // Set position via left/top (consistent with dragging math)
         elementDiv.style.position = "absolute";
-        elementDiv.style.transform = `translate(${element.x}px, ${element.y}px)`;
-        elementDiv.style.zIndex = index + 1;
+        elementDiv.style.left = (element.x || 0) + "px";
+        elementDiv.style.top = (element.y || 0) + "px";
+        elementDiv.style.zIndex = (element.zIndex || index + 1);
 
-        // Set element specific styles and content
+        // Element specific rendering
         if (element.type === "text") {
-            const textContent = getDisplayText(element);
-            elementDiv.innerHTML = textContent;
+            // Text elements should not have opaque white background
+            elementDiv.style.background = 'transparent';
+            elementDiv.style.padding = '0';
+            elementDiv.style.border = 'none';
 
-            // Apply text styles
-            elementDiv.style.fontFamily = element.fontFamily || "Arial";
-            elementDiv.style.fontSize = `${element.fontSize || 16}px`;
-            elementDiv.style.fontWeight = element.fontWeight || "400";
-            elementDiv.style.fontStyle = element.fontStyle;
-            elementDiv.style.textAlign = element.textAlign;
-            elementDiv.style.color = element.color || "#000000";
+            const textContent = getDisplayText(element);
+            const content = document.createElement('div');
+            content.className = 'element-content';
+            content.textContent = textContent;
+            content.style.fontFamily = element.fontFamily || "Arial";
+            content.style.fontSize = (element.fontSize || 16) + "px";
+            content.style.fontWeight = element.fontWeight || "400";
+            content.style.fontStyle = element.fontStyle || 'normal';
+            content.style.textAlign = element.textAlign || 'left';
+            content.style.color = element.color || '#2d3436';
+            elementDiv.appendChild(content);
 
             // Store original text for editing
-            elementDiv.dataset.originalText = element.text;
-            elementDiv.dataset.placeholderType = element.placeholderType;
+            elementDiv.dataset.originalText = element.text || '';
+            elementDiv.dataset.placeholderType = element.placeholderType || 'custom';
         } else if (element.type === "qrcode") {
-            elementDiv.style.width = `${element.width}pt`;
-            elementDiv.style.height = `${element.height}pt`;
-            elementDiv.innerHTML = `<div class="qrcode-placeholder"></div>`;
+            elementDiv.style.background = 'white';
+            elementDiv.style.padding = '6px';
+            elementDiv.style.borderRadius = '4px';
+            const size = element.width || 100;
+            const img = document.createElement('img');
+
+            try {
+                // generate QR using qrcode-generator library
+                const qr = qrcode(0, 'M');
+                qr.addData(element.data || 'https://diantara.co.id');
+                qr.make();
+                const dataUrl = qr.createDataURL(Math.max(1, Math.round(size/25)));
+                img.src = dataUrl;
+            } catch (err) {
+                // fallback to placeholder
+                img.src = '/storage/preview-sample.svg';
+            }
+
+            img.style.width = size + 'px';
+            img.style.height = size + 'px';
+            img.style.display = 'block';
+            img.style.pointerEvents = 'none';
+            elementDiv.appendChild(img);
+        } else if (element.type === "image") {
+            elementDiv.style.background = 'transparent';
+            elementDiv.style.padding = '0';
+            const img = document.createElement('img');
+            img.src = element.src || element.imageUrl || '';
+            img.style.width = (element.width || 100) + 'px';
+            img.style.height = (element.height || 100) + 'px';
+            img.style.objectFit = 'contain';
+            img.style.display = 'block';
+            img.style.pointerEvents = 'none';
+            elementDiv.appendChild(img);
         }
 
-        // Add draggable functionality
-        elementDiv.addEventListener("mousedown", startDragging);
-        elementDiv.addEventListener("click", selectElement);
+        // Add draggable/select functionality
+        elementDiv.addEventListener('pointerdown', startDragging);
+        elementDiv.addEventListener('click', selectElement);
 
-        previewContainer.appendChild(elementDiv);
+        container.appendChild(elementDiv);
     });
 
     // Update elements list in sidebar
     updateElementsList();
+}
+
+// Handle image file selection for new image elements - used by the blade input onchange
+function handleImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // store last-picked image as dataURL so addElement can use it
+        window._lastImageData = e.target.result;
+        // show preview thumbnail
+        const preview = document.getElementById('backgroundPreview');
+        if (preview) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
 // Helper function to get display text for placeholders
@@ -81,27 +149,37 @@ function updateElementsList() {
     elements.forEach((element, index) => {
         const elementItem = document.createElement("div");
         elementItem.className = "element-item";
+
+        // Determine icon and label per element type
+        let iconClass = 'fa-question';
+        let label = '';
+        if (element.type === 'text') {
+            iconClass = 'fa-font';
+            label = (element.text || '').toString().substring(0, 40) + ((element.text || '').toString().length > 40 ? '...' : '');
+        } else if (element.type === 'qrcode') {
+            iconClass = 'fa-qrcode';
+            label = 'QR Code';
+        } else if (element.type === 'image') {
+            iconClass = 'fa-image';
+            label = 'Gambar';
+        } else if (element.type === 'shape') {
+            iconClass = 'fa-shapes';
+            label = (element.shapeType || 'Shape');
+        } else {
+            iconClass = 'fa-layer-group';
+            label = element.type;
+        }
+
         elementItem.innerHTML = `
             <div>
-                <i class="fas ${
-                    element.type === "text" ? "fa-font" : "fa-qrcode"
-                }"></i>
-                ${
-                    element.type === "text"
-                        ? element.text.substring(0, 20) +
-                          (element.text.length > 20 ? "..." : "")
-                        : "QR Code"
-                }
+                <i class="fas ${iconClass}"></i>
+                ${label}
             </div>
             <div>
-                <button onclick="editElement('${
-                    element.id
-                }')" class="button" style="padding: 4px 8px; margin-right: 4px;">
+                <button onclick="editElement('${element.id}')" class="button" style="padding: 4px 8px; margin-right: 4px;">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteElement('${
-                    element.id
-                }')" class="button danger" style="padding: 4px 8px;">
+                <button onclick="deleteElement('${element.id}')" class="button danger" style="padding: 4px 8px;">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -110,47 +188,7 @@ function updateElementsList() {
     });
 }
 
-// Function to start dragging an element
-function startDragging(e) {
-    if (e.target.classList.contains("element")) {
-        draggedElement = e.target;
-        const rect = draggedElement.getBoundingClientRect();
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-        draggedElement.classList.add("dragging");
-    }
-}
-
-// Function to handle element dragging
-function handleElementDrag(e) {
-    if (!draggedElement) return;
-
-    e.preventDefault();
-
-    const previewContainer = document.getElementById("certificate-preview");
-    const containerRect = previewContainer.getBoundingClientRect();
-    const scale = previewContainer.offsetWidth / 842; // A4 width
-
-    // Calculate new position considering container scale
-    let x = (e.clientX - containerRect.left) / scale - offsetX;
-    let y = (e.clientY - containerRect.top) / scale - offsetY;
-
-    // Constrain to preview bounds (A4 dimensions)
-    x = Math.max(0, Math.min(x, 842 - draggedElement.offsetWidth));
-    y = Math.max(0, Math.min(y, 595 - draggedElement.offsetHeight));
-
-    // Update element position with transform
-    draggedElement.style.left = `${x}px`;
-    draggedElement.style.top = `${y}px`;
-
-    // Update element data
-    const elementId = draggedElement.id;
-    const element = elements.find((el) => el.id === elementId);
-    if (element) {
-        element.x = x;
-        element.y = y;
-    }
-}
+// Note: drag handling is centralized in drag-handler.js (pointer events)
 
 // Function to select an element
 function selectElement(e) {

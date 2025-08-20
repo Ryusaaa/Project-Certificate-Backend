@@ -298,10 +298,11 @@
             cursor: move;
             user-select: none;
             display: inline-block;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px 12px;
-            border-radius: 4px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
+            /* default transparent so text doesn't have white box */
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            border: none;
             font-family: inherit;
             transition: box-shadow 0.2s ease;
             pointer-events: auto;
@@ -312,7 +313,7 @@
             min-height: 20px;
             z-index: 1;
             margin: 0;
-            will-change: transform, left, top;
+            will-change: left, top;
         }
         
         .element:hover {
@@ -326,9 +327,12 @@
         }
         
         .element-content {
+            display: inline-block;
             font-size: 14px;
             color: #2d3436;
             white-space: nowrap;
+            background: transparent;
+            padding: 0;
         }
         
         .element-qrcode {
@@ -678,6 +682,21 @@
 
             <div class="section-title">Tambah Elemen</div>
 
+            <div class="element-type-selector">
+                <button class="element-type-btn active" onclick="selectElementType(this, 'text')">
+                    <i class="fas fa-font"></i>
+                    <span>Teks</span>
+                </button>
+                <button class="element-type-btn" onclick="selectElementType(this, 'image')">
+                    <i class="fas fa-image"></i>
+                    <span>Gambar</span>
+                </button>
+                <button class="element-type-btn" onclick="selectElementType(this, 'qrcode')">
+                    <i class="fas fa-qrcode"></i>
+                    <span>QR Code</span>
+                </button>
+            </div>
+
             <input type="hidden" id="elementType" value="text">
 
             <div id="textOptions">
@@ -800,7 +819,6 @@
                         <i class="fas fa-file-image"></i>
                     </div>
                     <div class="upload-text">
-                        <span class="required-badge">Wajib</span>
                         Drag & drop background sertifikat disini
                     </div>
                     <div class="upload-formats">atau klik untuk memilih file (JPG, PNG, GIF)</div>
@@ -816,229 +834,9 @@
     <script src="{{ asset('js/template-saver.js') }}"></script>
     <script src="{{ asset('js/placeholder-handler.js') }}"></script>
     <script src="{{ asset('js/template-preview.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <script src="{{ asset('js/element-handler.js') }}"></script>
     <script src="{{ asset('js/drag-handler.js') }}"></script>
-    <script>
-        // Initialize drag handling
-        let isDragging = false;
-        let draggedElement = null;
-        let selectedElement = null;
-        let initialMouseX = 0;
-        let initialMouseY = 0;
-        let initialElementX = 0;
-        let initialElementY = 0;
-        
-        // Add event listeners for dragging
-        document.addEventListener('mousemove', function(e) {
-            if (!isDragging || !draggedElement) return;
-
-            e.preventDefault();
-            
-            const previewContainer = document.getElementById('certificate-preview');
-            const containerRect = previewContainer.getBoundingClientRect();
-            const scale = previewContainer.style.transform 
-                ? parseFloat(previewContainer.style.transform.match(/scale\((.*?)\)/)[1])
-                : 1;
-
-            // Calculate the change in mouse position
-            const deltaX = (e.clientX - initialMouseX) / scale;
-            const deltaY = (e.clientY - initialMouseY) / scale;
-
-            // Calculate new position based on initial element position plus mouse movement
-            let newX = initialElementX + deltaX;
-            let newY = initialElementY + deltaY;
-
-            // Constrain to preview bounds (A4 dimensions)
-            newX = Math.max(0, Math.min(newX, 842 - draggedElement.offsetWidth));
-            newY = Math.max(0, Math.min(newY, 595 - draggedElement.offsetHeight));
-
-            // Update element position
-            draggedElement.style.left = `${newX}px`;
-            draggedElement.style.top = `${newY}px`;
-
-            // Update element data
-            const elementId = draggedElement.id;
-            const element = elements.find(el => el.id === elementId);
-            if (element) {
-                element.x = newX;
-                element.y = newY;
-            }
-        });
-
-        document.addEventListener('mouseup', function() {
-            isDragging = false;
-            draggedElement = null;
-            selectedElement = null;
-        });
-        
-        // Function to start dragging
-        function startDragging(e) {
-            const element = e.target.closest('.element');
-            if (!element) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-            
-            isDragging = true;
-            draggedElement = element;
-            selectedElement = element;
-
-            // Store initial mouse position
-            initialMouseX = e.clientX;
-            initialMouseY = e.clientY;
-
-            // Store initial element position
-            initialElementX = parseFloat(element.style.left) || 0;
-            initialElementY = parseFloat(element.style.top) || 0;
-
-            // Set the element as the highest z-index
-            const highestZ = Math.max(...Array.from(document.querySelectorAll('.element'))
-                .map(el => parseInt(window.getComputedStyle(el).zIndex) || 0));
-            element.style.zIndex = highestZ + 1;
-
-            // Update selection state
-            document.querySelectorAll('.element').forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
-        }
-        
-        // Function to add new element at specific position
-        function addElementAtPosition(x, y, element) {
-            element.style.left = `${x}px`;
-            element.style.top = `${y}px`;
-            document.getElementById('certificate-preview').appendChild(element);
-        }
-        
-        // Update preview container scale on window resize
-        window.addEventListener('resize', updatePreviewScale);
-        
-        function updatePreviewScale() {
-            const preview = document.getElementById('certificate-preview');
-            const workspace = document.querySelector('.preview-workspace');
-            const scale = Math.min(
-                workspace.offsetWidth / 842,
-                workspace.offsetHeight / 595
-            );
-            preview.style.transform = `scale(${scale})`;
-            preview.style.transformOrigin = 'center';
-            preview.style.transformBox = 'border-box';
-        }
-
-        // Handle element type selection
-        function selectElementType(button, type) {
-            document.querySelectorAll('.element-type-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            button.classList.add('active');
-            document.getElementById('elementType').value = type;
-            toggleOptions();
-        }
-
-        // Handle drag and drop for background image
-        const uploadArea = document.querySelector('.upload-btn');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            uploadArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            uploadArea.classList.add('highlight');
-        }
-
-        function unhighlight(e) {
-            uploadArea.classList.remove('highlight');
-        }
-
-        uploadArea.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const file = dt.files[0];
-            handleFileSelect({ target: { files: [file] } });
-        }
-
-        // Update file preview
-        function updateFilePreview(file) {
-            const preview = document.getElementById('backgroundPreview');
-            const reader = new FileReader();
-            const fileSize = document.querySelector('.file-size');
-            const fileName = document.querySelector('.file-name');
-
-            reader.onloadend = () => {
-                preview.src = reader.result;
-                preview.style.display = 'block';
-            }
-
-            if (file) {
-                reader.readAsDataURL(file);
-                fileName.textContent = file.name;
-                fileSize.textContent = formatFileSize(file.size);
-            }
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // Override the original handleFileSelect function
-        const originalHandleFileSelect = handleFileSelect;
-        handleFileSelect = function(event) {
-            originalHandleFileSelect(event);
-            updateFilePreview(event.target.files[0]);
-        }
-
-        // Function to download the certificate preview
-        function downloadPreview() {
-            const preview = document.getElementById('certificate-preview');
-            if (!preview.style.backgroundImage) {
-                alert('Harap upload background sertifikat terlebih dahulu');
-                return;
-            }
-
-            html2canvas(preview, {
-                scale: 2,
-                backgroundColor: null,
-                logging: false,
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'preview-sertifikat.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
-        }
-
-        // Scale preview on scroll
-        const workspace = document.querySelector('.preview-workspace');
-        workspace.addEventListener('wheel', (e) => {
-            if (e.ctrlKey) {
-                e.preventDefault();
-                const preview = document.getElementById('certificate-preview');
-                const currentScale = preview.style.transform ? 
-                    parseFloat(preview.style.transform.match(/scale\((.*?)\)/)[1]) : 1;
-                
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                const newScale = Math.min(Math.max(currentScale * delta, 0.5), 2);
-                
-                preview.style.transform = `scale(${newScale})`;
-            }
-        });
-    </script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </body>
 </html>

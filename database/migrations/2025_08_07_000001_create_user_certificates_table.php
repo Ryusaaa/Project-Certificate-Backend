@@ -16,7 +16,6 @@ return new class extends Migration
             $table->timestamp('assigned_at');
             $table->timestamps();
 
-            $table->string('unique_code')->unique()->nullable()->after('id');
             $table->string('qrcode_path')->nullable()->after('unique_code');
 
             // Memastikan satu user hanya memiliki satu record untuk satu sertifikat

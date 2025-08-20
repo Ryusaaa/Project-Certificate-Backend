@@ -650,12 +650,13 @@ class SertifikatPesertaController extends Controller
                 Storage::disk('public')->put('certificates/generated/' . $filename, $pdf->output());
 
                 // Create download record
+                $user = User::where('email', $recipient['email'])->first();
                 $download = $template->createDownload([
                     'token' => $downloadToken,
                     'filename' => $filename,
                     'recipient_name' => $recipient['recipient_name'],
                     'certificate_number' => $certificateNumber,
-                    'user_id' => $request->user() ? $request->user()->id : null,
+                    'user_id' => $user ? $user->id : null,
                     'expires_at' => now()->addDays(30) // Token berlaku 30 hari
                 ]);
 
@@ -674,7 +675,8 @@ class SertifikatPesertaController extends Controller
                         'certificate_download_id' => $download->id,
                         'assigned_at' => now(),
                         'status' => 'active',
-                        'merchant_id' => $validated['merchant_id']
+                        'merchant_id' => $validated['merchant_id'],
+                        'qrcode_path' => 'qrcodes/' . $downloadToken . '.png'
                     ]);
 
                     if (!$userCertificate) {
@@ -735,16 +737,22 @@ class SertifikatPesertaController extends Controller
                 $pdfPath = 'certificates/generated/' . $filename;
                 Storage::disk('public')->put($pdfPath, $pdf->output());
 
-                // Send email with certificate
+                // Send email with certificate using PHPMailer
                 try {
-                    Mail::to($recipient['email'])->send(
-                        new CertificateGenerated(
-                            $recipient['recipient_name'],
-                            $certificateNumber,
-                            '/sertifikat-templates/download/' . $downloadToken,
-                            $pdf->output()
-                        )
+                    $emailSent = \App\Helpers\EmailHelper::sendCertificateEmail(
+                        $recipient['email'],
+                        $recipient['recipient_name'],
+                        $certificateNumber,
+                        url('/sertifikat-templates/download/' . $downloadToken),
+                        $pdf->output()
                     );
+
+                    if (!$emailSent) {
+                        Log::warning('Email might not have been sent successfully', [
+                            'recipient' => $recipient['email'],
+                            'certificate' => $certificateNumber
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     Log::error('Failed to send certificate email', [
                         'recipient' => $recipient['email'],
