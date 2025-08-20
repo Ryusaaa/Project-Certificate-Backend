@@ -88,10 +88,10 @@ Route::prefix('sertifikat-templates')->group(function () {
     // PDF related routes
     Route::post('/{id}/preview-template', [SertifikatPesertaController::class, 'previewPDF']);
     Route::post('/{id}/generate-pdf', [SertifikatPesertaController::class, 'generatePDF']);
-    Route::post('/{id}/generate-bulk-pdf', [SertifikatPesertaController::class, 'generateBulkPDF']);
+    Route::post('/{id}/generate-bulk-pdf', [SertifikatPesertaController::class, 'generateBulkPDF']); // Endpoint Generate pakai yang ini
     Route::get('/download/{token}', [SertifikatPesertaController::class, 'downloadPDF']);
     Route::get('/preview/{token}', [SertifikatPesertaController::class, 'previewPDFWithToken']);
-    Route::get('/users/{userId}/certificates', [SertifikatPesertaController::class, 'getUserCertificates']);
+    Route::get('/users/{userId}/certificates', [SertifikatPesertaController::class, 'getUserCertificates']); // Endpoint buat halaman peserta
 });
 
 Route::get('/latest-qrcode', function () {

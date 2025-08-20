@@ -650,12 +650,13 @@ class SertifikatPesertaController extends Controller
                 Storage::disk('public')->put('certificates/generated/' . $filename, $pdf->output());
 
                 // Create download record
+                $user = User::where('email', $recipient['email'])->first();
                 $download = $template->createDownload([
                     'token' => $downloadToken,
                     'filename' => $filename,
                     'recipient_name' => $recipient['recipient_name'],
                     'certificate_number' => $certificateNumber,
-                    'user_id' => $request->user() ? $request->user()->id : null,
+                    'user_id' => $user ? $user->id : null,
                     'expires_at' => now()->addDays(30) // Token berlaku 30 hari
                 ]);
 
@@ -674,7 +675,8 @@ class SertifikatPesertaController extends Controller
                         'certificate_download_id' => $download->id,
                         'assigned_at' => now(),
                         'status' => 'active',
-                        'merchant_id' => $validated['merchant_id']
+                        'merchant_id' => $validated['merchant_id'],
+                        'qrcode_path' => 'qrcodes/' . $downloadToken . '.png'
                     ]);
 
                     if (!$userCertificate) {
