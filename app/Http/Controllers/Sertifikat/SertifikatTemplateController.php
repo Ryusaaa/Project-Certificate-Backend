@@ -725,7 +725,24 @@ class SertifikatTemplateController extends Controller
                 }
 
                 if ($imageUrl) {
-                    if (preg_match('#/storage/certificates/([^/]+)$#', $imageUrl, $matches)) {
+                    // If image was sent as a data URL (base64), persist it
+                    if (preg_match('/^data:image\/(png|jpeg|jpg);base64,/', $imageUrl)) {
+                        try {
+                            $imageData = preg_replace('/^data:image\/(png|jpeg|jpg);base64,/', '', $imageUrl);
+                            $imageData = base64_decode($imageData);
+                            $filename = 'certificates/' . time() . '_' . Str::random(10) . '.png';
+                            Storage::disk('public')->put($filename, $imageData);
+                            $url = Storage::url($filename);
+                            $element['image_url'] = $url;
+                            $element['image'] = $url;
+                            $element['image_path'] = $filename;
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to persist base64 image for element', ['err' => $e->getMessage()]);
+                        }
+                    }
+
+                    // If image points to existing storage path, keep reference
+                    elseif (preg_match('#/storage/certificates/([^/]+)$#', $imageUrl, $matches)) {
                         $imagePath = 'certificates/' . $matches[1];
 
                         if (Storage::disk('public')->exists($imagePath)) {
@@ -779,6 +796,15 @@ class SertifikatTemplateController extends Controller
                 $element['style']['borderRadius'] = max(0, floatval($element['style']['borderRadius']));
 
                 Log::info('Processed shape element:', $element);
+            }
+
+            if ($element['type'] === 'qrcode') {
+                if (isset($element['qrcode']) && preg_match('/^data:image\/(png|jpeg|gif);base64,/', $element['qrcode'])) {
+                    $imageData = base64_decode(preg_replace('/^data:image\/(png|jpeg|gif);base64,/', '', $element['qrcode']));
+                    $filename = 'qrcodes/' . time() . '_' . Str::random(10) . '.png';
+                    Storage::disk('public')->put($filename, $imageData);
+                    $element['qrcode'] = Storage::url($filename);
+                }
             }
 
             // Remove any scaling-related properties

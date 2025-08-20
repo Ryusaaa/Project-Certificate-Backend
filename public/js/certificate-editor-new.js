@@ -2,9 +2,12 @@
 let elements = [];
 let selectedElement = null;
 let draggedElement = null;
-let offsetX = 0;
-let offsetY = 0;
 let currentZoom = 1;
+let initialMouseX = 0;
+let initialMouseY = 0;
+let initialElementX = 0;
+let initialElementY = 0;
+
 const _registeredFontFaces = {};
 
 // Zoom functions
@@ -169,6 +172,10 @@ function addElement() {
     }
 }
 
+function renderElements() {
+    updatePreview();
+}
+
 function createNewElement(type) {
     const element = {
         id: "element-" + Date.now(),
@@ -181,13 +188,18 @@ function createNewElement(type) {
         case "qrcode":
             return {
                 ...element,
-                width:
-                    parseInt(document.getElementById("qrcodeSize").value) ||
-                    100,
-                height:
-                    parseInt(document.getElementById("qrcodeSize").value) ||
-                    100,
-                placeholderType: "qrcode",
+                width: parseInt(document.getElementById("qrcodeSize").value) || 100,
+                height: parseInt(document.getElementById("qrcodeSize").value) || 100,
+                data: "https://diantara.co.id", // Default QR code data
+            };
+        case "image":
+            // For images, we'll need to handle file selection and upload separately.
+            // For now, we'll just set placeholder dimensions.
+            return {
+                ...element,
+                width: parseInt(document.getElementById("imageWidth").value) || 100,
+                height: parseInt(document.getElementById("imageHeight").value) || 100,
+                src: window._lastImageData || "", // Use last selected image dataURL if available
             };
         case "text":
             const text = document.getElementById("elementText").value;
@@ -207,7 +219,7 @@ function createNewElement(type) {
                 fontFamily:
                     document.getElementById("fontFamily").value || "Arial",
                 fontWeight:
-                    document.getElementById("fontWeight").value || "400",
+                    parseInt(document.getElementById("fontWeight").value) || "400",
                 fontStyle:
                     document.getElementById("fontStyle").value || "normal",
                 textAlign: document.getElementById("textAlign").value || "left",
@@ -231,7 +243,14 @@ function updatePreview() {
 
         if (element.type === "qrcode") {
             div.className += " element-qrcode";
-            div.innerHTML = `<img src="/storage/preview-sample.svg" style="width: ${element.width}px; height: ${element.height}px;">`;
+            const qr = qrcode(0, 'M');
+            qr.addData(element.data || 'https://diantara.co.id'); // Use element.data
+            qr.make();
+            const qrCodeImage = qr.createDataURL(10, 0);
+            div.innerHTML = `<img src="${qrCodeImage}" style="width: ${element.width}px; height: ${element.height}px;">`;
+        } else if (element.type === "image") {
+            div.className += " element-image";
+            div.innerHTML = `<img src="${element.src}" style="width: ${element.width}px; height: ${element.height}px;">`;
         } else if (element.type === "text") {
             div.style.fontSize = element.fontSize + "px";
             div.style.fontFamily = element.fontFamily;
@@ -254,80 +273,149 @@ function updatePreview() {
     updateElementsList();
 }
 
-function startDragging(e) {
-    e.preventDefault();
+// Initialize drag handling
+let isDragging = false;
 
-    const element = e.target.closest(".element");
-    if (!element) return;
+// Add event listeners for dragging
+// Dragging is handled centrally in drag-handler.js (pointer events)
 
-    draggedElement = element;
-    selectedElement = element;
+// Update preview container scale on window resize
+window.addEventListener('resize', updatePreviewScale);
 
-    const rect = element.getBoundingClientRect();
-    const transform = new WebKitCSSMatrix(
-        window.getComputedStyle(element).transform
+function updatePreviewScale() {
+    const preview = document.getElementById('certificate-preview');
+    const workspace = document.querySelector('.preview-workspace');
+    const scale = Math.min(
+        workspace.offsetWidth / 842,
+        workspace.offsetHeight / 595
     );
-
-    offsetX = e.clientX - (rect.left + transform.m41);
-    offsetY = e.clientY - (rect.top + transform.m42);
-
-    // Update selection state
-    document
-        .querySelectorAll(".element")
-        .forEach((el) => el.classList.remove("selected"));
-    element.classList.add("selected");
+    preview.style.transform = `scale(${scale})`;
+    preview.style.transformOrigin = 'center';
+    preview.style.transformBox = 'border-box';
 }
 
-function handleMouseMove(e) {
-    if (!draggedElement) return;
+// Handle element type selection
+function selectElementType(button, type) {
+    document.querySelectorAll('.element-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    button.classList.add('active');
+    document.getElementById('elementType').value = type;
+    toggleOptions();
+}
 
-    const preview = document.getElementById("certificate-preview");
-    const rect = preview.getBoundingClientRect();
+function toggleOptions() {
+    const type = document.getElementById('elementType').value;
+    document.getElementById('textOptions').style.display = type === 'text' ? 'block' : 'none';
+    document.getElementById('imageOptions').style.display = type === 'image' ? 'block' : 'none';
+    document.getElementById('qrcodeOptions').style.display = type === 'qrcode' ? 'block' : 'none';
+}
 
-    const x = e.clientX - rect.left - offsetX;
-    const y = e.clientY - rect.top - offsetY;
+// Handle drag and drop for background image
+const uploadArea = document.querySelector('.upload-btn');
 
-    draggedElement.style.left = x + "px";
-    draggedElement.style.top = y + "px";
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, preventDefaults, false);
+});
 
-    const elementId = draggedElement.dataset.id;
-    const element = elements.find((el) => el.id === elementId);
-    if (element) {
-        element.x = x;
-        element.y = y;
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    uploadArea.classList.add('highlight');
+}
+
+function unhighlight(e) {
+    uploadArea.classList.remove('highlight');
+}
+
+uploadArea.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const file = dt.files[0];
+    handleFileSelect({ target: { files: [file] } });
+}
+
+// Update file preview
+function updateFilePreview(file) {
+    const preview = document.getElementById('backgroundPreview');
+    const reader = new FileReader();
+    const fileSize = document.querySelector('.file-size');
+    const fileName = document.querySelector('.file-name');
+
+    reader.onloadend = () => {
+        preview.src = reader.result;
+        preview.style.display = 'block';
+    }
+
+    if (file) {
+        reader.readAsDataURL(file);
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
     }
 }
 
-function handleMouseUp() {
-    draggedElement = null;
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-function updateElementsList() {
-    const list = document.getElementById("elementsList");
-    list.innerHTML = "";
+// Override the original handleFileSelect function
+const originalHandleFileSelect = handleFileSelect;
+handleFileSelect = function(event) {
+    originalHandleFileSelect(event);
+    updateFilePreview(event.target.files[0]);
+}
 
-    elements.forEach((element, index) => {
-        const div = document.createElement("div");
-        div.className = "element-item";
-        div.innerHTML = `
-            <span>${
-                element.type === "text" ? element.text : element.type
-            }</span>
-            <div class="element-actions">
-                <button onclick="editElement(${index})" class="button-edit">Edit</button>
-                <button onclick="removeElement(${index})" class="button-delete">Hapus</button>
-            </div>
-        `;
-        list.appendChild(div);
+// Function to download the certificate preview
+function downloadPreview() {
+    const preview = document.getElementById('certificate-preview');
+    if (!preview.style.backgroundImage) {
+        alert('Harap upload background sertifikat terlebih dahulu');
+        return;
+    }
+
+    html2canvas(preview, {
+        scale: 2,
+        backgroundColor: null,
+        logging: false,
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'preview-sertifikat.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
     });
 }
 
-function removeElement(index) {
-    if (confirm("Apakah Anda yakin ingin menghapus elemen ini?")) {
-        elements.splice(index, 1);
-        updatePreview();
+// Scale preview on scroll
+const workspace = document.querySelector('.preview-workspace');
+workspace.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) {
+        e.preventDefault();
+        const preview = document.getElementById('certificate-preview');
+        const currentScale = preview.style.transform ? 
+            parseFloat(preview.style.transform.match(/scale\((.*?)\)/)[1]) : 1;
+        
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        const newScale = Math.min(Math.max(currentScale * delta, 0.5), 2);
+        
+        preview.style.transform = `scale(${newScale})`;
     }
-}
+});
 
 // Initialize everything
 document.addEventListener("DOMContentLoaded", function () {
