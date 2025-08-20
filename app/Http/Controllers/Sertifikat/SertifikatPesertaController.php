@@ -675,7 +675,8 @@ class SertifikatPesertaController extends Controller
                         'certificate_download_id' => $download->id,
                         'assigned_at' => now(),
                         'status' => 'active',
-                        'merchant_id' => $validated['merchant_id']
+                        'merchant_id' => $validated['merchant_id'],
+                        'qrcode_path' => 'qrcodes/' . $downloadToken . '.png'
                     ]);
 
                     if (!$userCertificate) {
