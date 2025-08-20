@@ -736,16 +736,22 @@ class SertifikatPesertaController extends Controller
                 $pdfPath = 'certificates/generated/' . $filename;
                 Storage::disk('public')->put($pdfPath, $pdf->output());
 
-                // Send email with certificate
+                // Send email with certificate using PHPMailer
                 try {
-                    Mail::to($recipient['email'])->send(
-                        new CertificateGenerated(
-                            $recipient['recipient_name'],
-                            $certificateNumber,
-                            '/sertifikat-templates/download/' . $downloadToken,
-                            $pdf->output()
-                        )
+                    $emailSent = \App\Helpers\EmailHelper::sendCertificateEmail(
+                        $recipient['email'],
+                        $recipient['recipient_name'],
+                        $certificateNumber,
+                        url('/sertifikat-templates/download/' . $downloadToken),
+                        $pdf->output()
                     );
+
+                    if (!$emailSent) {
+                        Log::warning('Email might not have been sent successfully', [
+                            'recipient' => $recipient['email'],
+                            'certificate' => $certificateNumber
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     Log::error('Failed to send certificate email', [
                         'recipient' => $recipient['email'],

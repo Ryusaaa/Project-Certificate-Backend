@@ -3,8 +3,13 @@
 <head>
     <meta charset="utf-8">
     <title>Sertifikat</title>
+    {{-- Inline critical CSS so PDF generator (dompdf) picks it up reliably --}}
     <link href="{{ asset('css/all-fonts.css') }}" rel="stylesheet">
     <style>
+        /* begin inlined certificate.css */
+        .certificate { width:100%; height:100%; position:relative; background-repeat:no-repeat; background-position:center; background-size:contain; }
+        .element { position:absolute; transform-origin: top left; }
+        /* end inlined certificate.css */
         @php
             use App\Helpers\FontHelper;
 
@@ -141,9 +146,22 @@
                     if (!isset($el['type']) || $el['type'] !== 'text') continue;
                     $f = isset($el['font']) ? $el['font'] : null;
                     if (!$f) continue;
-                    if (!isset($f['folder'])) continue;
 
-                    $folder = $f['folder'];
+                    // Resolve folder: prefer explicit folder, otherwise attempt to map from font family
+                    $folder = isset($f['folder']) ? $f['folder'] : null;
+                    if (!$folder && isset($f['family'])) {
+                        $fontsRoot = public_path('fonts');
+                        if (is_dir($fontsRoot)) {
+                            foreach (scandir($fontsRoot) as $dirItem) {
+                                if (in_array($dirItem, ['.', '..'])) continue;
+                                if (!is_dir($fontsRoot . DIRECTORY_SEPARATOR . $dirItem)) continue;
+                                $san1 = strtolower(preg_replace('/[^a-z0-9]/', '', $dirItem));
+                                $san2 = strtolower(preg_replace('/[^a-z0-9]/', '', $f['family']));
+                                if ($san1 === $san2) { $folder = $dirItem; break; }
+                            }
+                        }
+                    }
+                    if (!$folder) continue;
                     $requestedFile = isset($f['weightFile']) ? $f['weightFile'] : null;
                     $style = isset($f['style']) ? $f['style'] : 'normal';
                     $weight = isset($f['cssWeight']) ? $f['cssWeight'] : (isset($f['weight']) ? $f['weight'] : '400');
@@ -320,6 +338,21 @@
             @endif
         @endforeach
 
+        @php
+            // Build a mapping from folder->generatedFamily so rendering can use the same family name
+            $generatedFamilyMap = [];
+            foreach ($requiredFonts as $k => $info) {
+                $folder = $info['folder'] ?? null;
+                $file = $info['file'] ?? null;
+                if ($folder && $file) {
+                    $gen = FontHelper::sanitizeFontName($folder) . '-' . FontHelper::sanitizeFontName(pathinfo($file, PATHINFO_FILENAME));
+                    $generatedFamilyMap[strtolower(preg_replace('/[^a-z0-9]/', '', $folder))] = $gen;
+                    // also map by sanitized family name (in case folder name differs in case or punctuation)
+                    $generatedFamilyMap[strtolower(preg_replace('/[^a-z0-9]/', '', $folder)) . '_alt'] = $gen;
+                }
+            }
+        @endphp
+
         body {
             margin: 0;
             padding: 0;
@@ -405,59 +438,53 @@
                         $y = $element['y'];
                         $width = isset($element['width']) ? $element['width'] : 120;
                         $height = isset($element['height']) ? $element['height'] : 120;
-                        $qrStyle = "left: {$x}pt; top: {$y}pt; width: {$width}pt; height: {$height}pt;";
-                        
-                        // Get QR code content from element
-                        $qrContent = isset($element['qrcode']) ? $element['qrcode'] : '';
-                        
-                        \Illuminate\Support\Facades\Log::debug('Processing QR code:', [
-                            'position' => "{$x}pt, {$y}pt",
-                            'size' => "{$width}pt x {$height}pt",
-                            'has_content' => !empty($qrContent),
-                            'content_length' => strlen($qrContent),
-                            'has_svg' => strpos($qrContent, '<svg') !== false,
-                            'is_base64' => strpos($qrContent, 'data:image/svg+xml;base64,') === 0
-                        ]);
+                        // Use px units to match client-side preview coordinates (client uses px)
+                        $qrStyle = "left: {$x}px; top: {$y}px; width: {$width}px; height: {$height}px;";
+
+                        // Determine QR content: accept data URI, storage path, external URL, or regenerate via controller
+                        $qr = isset($element['qrcode']) ? $element['qrcode'] : null;
+                        $qrContent = null;
+                        if ($qr) {
+                            if (is_string($qr) && substr($qr, 0, 5) === 'data:') {
+                                $qrContent = $qr;
+                            } elseif (is_string($qr) && (substr($qr, 0, 9) === '/storage/' || strpos($qr, 'storage/') !== false)) {
+                                $rel = preg_replace('#^/storage/#', '', $qr);
+                                $path = storage_path('app/public/' . ltrim($rel, '/'));
+                                if (file_exists($path)) {
+                                    $qrContent = 'data:image/png;base64,' . base64_encode(file_get_contents($path));
+                                }
+                            } elseif (is_string($qr) && filter_var($qr, FILTER_VALIDATE_URL)) {
+                                // best-effort fetch
+                                try {
+                                    $contents = @file_get_contents($qr);
+                                    if ($contents !== false) {
+                                        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                                        $mime = finfo_buffer($finfo, $contents);
+                                        finfo_close($finfo);
+                                        $qrContent = 'data:' . ($mime ?: 'image/png') . ';base64,' . base64_encode($contents);
+                                    }
+                                } catch (\Exception $e) {
+                                    $qrContent = null;
+                                }
+                            }
+                        }
+
+                        if (empty($qrContent)) {
+                            $certificateNumber = isset($element['content']) ? $element['content'] : null;
+                            if ($certificateNumber) {
+                                $qrContent = app(\App\Http\Controllers\Sertifikat\SertifikatPesertaController::class)
+                                    ->getQRCodeFromCertificate($certificateNumber);
+                            }
+                        }
                     @endphp
-                    
+
                     <div class="element element-qrcode" style="{{ $qrStyle }}">
                         @if(!empty($qrContent))
                             <img src="{{ $qrContent }}" alt="QR Code" style="width: 100%; height: 100%; display: block; image-rendering: pixelated;">
-                            @php
-                                \Illuminate\Support\Facades\Log::info('QR code rendered from image data', [
-                                    'style' => $qrStyle,
-                                    'has_content' => true,
-                                    'content_length' => strlen($qrContent),
-                                    'is_data_uri' => strpos($qrContent, 'data:image/png;base64,') === 0
-                                ]);
-                            @endphp
                         @else
-                            @php
-                                $certificateNumber = isset($element['content']) ? $element['content'] : null;
-                                if ($certificateNumber) {
-                                    $qrContent = app(\App\Http\Controllers\Sertifikat\SertifikatPesertaController::class)
-                                        ->getQRCodeFromCertificate($certificateNumber);
-                                }
-                            @endphp
-                            @if(!empty($qrContent))
-                                <img src="{{ $qrContent }}" alt="QR Code" style="width: 100%; height: 100%; display: block; image-rendering: pixelated;">
-                                @php
-                                    \Illuminate\Support\Facades\Log::info('QR code rendered from certificate number', [
-                                        'certificate_number' => $certificateNumber,
-                                        'has_content' => true,
-                                        'content_length' => strlen($qrContent)
-                                    ]);
-                                @endphp
-                            @else
-                                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border: 1px dashed #ddd; font-size: 10pt; color: #666;">
-                                    QR tidak ditemukan
-                                </div>
-                                @php
-                                    \Illuminate\Support\Facades\Log::warning('No QR code content available', [
-                                        'certificate_number' => $certificateNumber
-                                    ]);
-                                @endphp
-                            @endif
+                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border: 1px dashed #ddd; font-size: 10pt; color: #666;">
+                                QR tidak ditemukan
+                            </div>
                         @endif
                     </div>
                 @elseif($element['type'] === 'text')
@@ -475,9 +502,20 @@
 
                             // compute generated family that matches client-side registerFontFace
                             if ($fontFolder && $fontFile) {
-                                $generatedFamily = FontHelper::sanitizeFontName($fontFolder) . '-' . FontHelper::sanitizeFontName(pathinfo($fontFile, PATHINFO_FILENAME));
+                                $key = strtolower(preg_replace('/[^a-z0-9]/', '', $fontFolder));
+                                if (isset($generatedFamilyMap[$key])) {
+                                    $generatedFamily = $generatedFamilyMap[$key];
+                                } else {
+                                    $generatedFamily = FontHelper::sanitizeFontName($fontFolder) . '-' . FontHelper::sanitizeFontName(pathinfo($fontFile, PATHINFO_FILENAME));
+                                }
                             } else {
-                                $generatedFamily = isset($element['font']['family']) ? $element['font']['family'] : 'Arial';
+                                // If we have an embedded mapping by sanitized family name, use it
+                                $san = isset($element['font']['family']) ? strtolower(preg_replace('/[^a-z0-9]/', '', $element['font']['family'])) : null;
+                                if ($san && isset($generatedFamilyMap[$san])) {
+                                    $generatedFamily = $generatedFamilyMap[$san];
+                                } else {
+                                    $generatedFamily = isset($element['font']['family']) ? $element['font']['family'] : 'Arial';
+                                }
                             }
 
                             // Build transform functions array so we can append skew if needed
@@ -505,12 +543,13 @@
                             // If applying skew fallback ensure element is inline-block so transform affects glyphs
                             $displayCss = $applySkewFallback ? 'display: inline-block;' : '';
 
-                            $style = "
+                                // Use px units for on-screen rendering so positions match editor
+                                $style = "
                                 position: absolute;
-                                left: {$x}pt;
-                                top: {$y}pt;
+                                left: {$x}px;
+                                top: {$y}px;
                                 font-family: '{$generatedFamily}', Arial, sans-serif;
-                                font-size: {$fontSize}pt;
+                                font-size: {$fontSize}px;
                                 font-weight: {$fontWeight};
                                 font-style: {$fontStyle};
                                 color: {$color};
@@ -525,19 +564,38 @@
                 @elseif($element['type'] === 'image')
                     @php
                         $imageSrc = null;
-                        $imageUrl = isset($element['imageUrl']) ? $element['imageUrl'] : null;
-                        // GANTI str_starts_with dengan substr
-                        if ($imageUrl && substr($imageUrl, 0, strlen('/storage/')) === '/storage/') {
-                            $imagePath = storage_path('app/public/' . substr($imageUrl, 8));
-                            if (file_exists($imagePath)) {
-                                $imageData = base64_encode(file_get_contents($imagePath));
-                                $imageSrc = 'data:image/' . pathinfo($imagePath, PATHINFO_EXTENSION) . ';base64,' . $imageData;
+                        // Accept multiple stored keys
+                        $imgCandidate = null;
+                        if (!empty($element['imageUrl'])) $imgCandidate = $element['imageUrl'];
+                        elseif (!empty($element['image_url'])) $imgCandidate = $element['image_url'];
+                        elseif (!empty($element['image'])) $imgCandidate = $element['image'];
+                        elseif (!empty($element['src'])) $imgCandidate = $element['src'];
+                        elseif (!empty($element['image_path'])) $imgCandidate = '/storage/' . ltrim($element['image_path'], '/');
+
+                        if ($imgCandidate) {
+                            if (is_string($imgCandidate) && substr($imgCandidate, 0, 5) === 'data:') {
+                                $imageSrc = $imgCandidate;
+                            } elseif (is_string($imgCandidate) && (substr($imgCandidate, 0, 9) === '/storage/' || strpos($imgCandidate, 'storage/') !== false)) {
+                                $rel = preg_replace('#^/storage/#', '', $imgCandidate);
+                                $path = storage_path('app/public/' . ltrim($rel, '/'));
+                                if (file_exists($path)) {
+                                    $ext = pathinfo($path, PATHINFO_EXTENSION);
+                                    $data = base64_encode(file_get_contents($path));
+                                    $imageSrc = 'data:image/' . $ext . ';base64,' . $data;
+                                }
+                            } elseif (is_string($imgCandidate) && file_exists(public_path($imgCandidate))) {
+                                $imageSrc = public_path($imgCandidate);
+                            } elseif (!empty($element['image_path']) && file_exists(storage_path('app/public/' . $element['image_path']))) {
+                                $path = storage_path('app/public/' . $element['image_path']);
+                                $ext = pathinfo($path, PATHINFO_EXTENSION);
+                                $data = base64_encode(file_get_contents($path));
+                                $imageSrc = 'data:image/' . $ext . ';base64,' . $data;
                             }
                         }
                     @endphp
                     @if($imageSrc)
-                        <div class="element" style="left: {{ $element['x'] }}pt; top: {{ $element['y'] }}pt;">
-                            <img src="{{ $imageSrc }}" style="width: {{ $element['width'] }}pt; height: {{ $element['height'] }}pt;">
+                        <div class="element" style="left: {{ $element['x'] }}px; top: {{ $element['y'] }}px;">
+                            <img src="{{ $imageSrc }}" style="width: {{ $element['width'] }}px; height: {{ $element['height'] }}px;">
                         </div>
                     @endif
                 @endif

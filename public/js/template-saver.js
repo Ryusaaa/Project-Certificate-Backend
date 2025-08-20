@@ -36,20 +36,48 @@ async function saveTemplate() {
             merchant_id: merchantId,
             name: templateName,
             background_image: preview.dataset.backgroundImage,
-            elements: elements.map((element) => ({
-                type: element.type,
-                x: element.x,
-                y: element.y,
-                width: element.width,
-                height: element.height,
-                text: element.text,
-                fontSize: element.fontSize,
-                fontFamily: element.fontFamily,
-                fontWeight: element.fontWeight,
-                fontStyle: element.fontStyle,
-                textAlign: element.textAlign,
-                placeholderType: element.placeholderType,
-            })),
+            elements: elements.map((element) => {
+                const el = {
+                    type: element.type,
+                    x: element.x,
+                    y: element.y,
+                    width: element.width,
+                    height: element.height,
+                    text: element.text,
+                    fontSize: element.fontSize,
+                    fontFamily: element.fontFamily,
+                    fontWeight: element.fontWeight,
+                    fontStyle: element.fontStyle,
+                    textAlign: element.textAlign,
+                    placeholderType: element.placeholderType,
+                };
+
+                if (element.type === 'qrcode') {
+                    // Prefer qrcode data stored in model, fall back to DOM image src
+                    el.qrcode = element.qrcode || element.data || null;
+                    if (!el.qrcode) {
+                        const qrCodeElement = document.querySelector(`[data-id='${element.id}'] img`);
+                        if (qrCodeElement) el.qrcode = qrCodeElement.src;
+                    }
+                }
+
+                if (element.type === 'image') {
+                    // try to capture src from model or DOM
+                    el.src = element.src || element.imageUrl || null;
+                }
+
+                if (element.type === 'text') {
+                    // Send nested font object so server can resolve/embed fonts
+                    el.font = {
+                        family: element.fontFamily || element.font || 'Arial',
+                        weight: element.fontWeight || '400',
+                        style: element.fontStyle || 'normal',
+                        cssWeight: element.fontWeight || '400'
+                    };
+                }
+
+                return el;
+            }),
         };
 
         const response = await fetch("/sertifikat-templates", {

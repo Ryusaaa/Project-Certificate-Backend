@@ -162,12 +162,11 @@ function updatePreview() {
 
         // Set position
         div.style.position = "absolute";
-        div.style.left = element.x + "px";
-        div.style.top = element.y + "px";
+        div.style.left = (element.x || 0) + "px";
+        div.style.top = (element.y || 0) + "px";
 
-        // Set up dragging
-        div.draggable = true;
-        div.addEventListener("mousedown", handleElementMouseDown);
+        // Use centralized pointer-based dragging
+        div.addEventListener('pointerdown', startDragging);
 
         container.appendChild(div);
     });
@@ -178,12 +177,19 @@ function updatePreview() {
 function renderQRCode(div, element) {
     div.className += " element-qrcode";
     const size = element.width || 100;
+    const img = document.createElement('img');
+    img.style.width = size + 'px';
+    img.style.height = size + 'px';
+    img.style.pointerEvents = 'none';
 
-    const img = document.createElement("img");
-    img.src = "/storage/preview-sample.svg";
-    img.style.width = size + "px";
-    img.style.height = size + "px";
-    img.style.pointerEvents = "none";
+    try {
+        const qr = qrcode(0, 'M');
+        qr.addData(element.data || 'https://diantara.co.id');
+        qr.make();
+        img.src = qr.createDataURL(Math.max(1, Math.round(size/25)));
+    } catch (err) {
+        img.src = '/storage/preview-sample.svg';
+    }
 
     div.appendChild(img);
 }
@@ -207,7 +213,7 @@ function renderText(div, element) {
 function renderImage(div, element) {
     div.className += " element-image";
     const img = document.createElement("img");
-    img.src = element.imageUrl;
+    img.src = element.src || element.imageUrl || '';
     img.style.width = (element.width || 100) + "px";
     img.style.height = (element.height || 100) + "px";
     img.style.pointerEvents = "none";
@@ -224,56 +230,7 @@ function getPlaceholderLabel(type) {
     return labels[type] || type;
 }
 
-function handleElementMouseDown(e) {
-    const element = e.currentTarget;
-    if (!element.classList.contains("element")) return;
-
-    // Remove selected class from all elements
-    document
-        .querySelectorAll(".element")
-        .forEach((el) => el.classList.remove("selected"));
-
-    // Add selected class to clicked element
-    element.classList.add("selected");
-
-    // Set up dragging
-    selectedElement = element;
-    draggedElement = element;
-
-    const rect = element.getBoundingClientRect();
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-
-    // Prevent text selection while dragging
-    e.preventDefault();
-}
-
-function handleElementDrag(e) {
-    if (!draggedElement) return;
-
-    const preview = document.getElementById("certificate-preview");
-    const rect = preview.getBoundingClientRect();
-    const scale = preview.offsetWidth / 842;
-
-    let x = (e.clientX - rect.left) / scale - offsetX;
-    let y = (e.clientY - rect.top) / scale - offsetY;
-
-    // Constrain to preview bounds
-    x = Math.max(0, Math.min(x, 842 - draggedElement.offsetWidth));
-    y = Math.max(0, Math.min(y, 595 - draggedElement.offsetHeight));
-
-    // Update element position
-    draggedElement.style.left = x + "px";
-    draggedElement.style.top = y + "px";
-
-    // Update element data
-    const elementId = draggedElement.dataset.id;
-    const element = elements.find((el) => el.id === elementId);
-    if (element) {
-        element.x = x;
-        element.y = y;
-    }
-}
+// Dragging is handled centrally in drag-handler.js (pointermove/pointerup)
 
 function updateElementsList() {
     const list = document.getElementById("elementsList");
