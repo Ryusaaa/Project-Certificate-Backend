@@ -5,11 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Editor Sertifikat</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Arial&family=Times+New+Roman&family=Helvetica&family=Georgia&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Fonts -->
+    <link href="{{ asset('css/all-fonts.css') }}" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+    /* Font face declarations for custom fonts */
+    @font-face {
+        font-family: 'Alice';
+        src: url('/fonts/Alice/Alice-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Breathing';
+        src: url('/fonts/breathing/Breathing Personal Use Only.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Brighter';
+        src: url('/fonts/brighter/Brighter Regular.otf') format('opentype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Brittany';
+        src: url('/fonts/brittany_2/Brittany.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    /* Add more custom fonts */
+    @font-face {
+        font-family: 'Caitlin Angelica';
+        src: url('/fonts/caitlin_angelica/Caitlin Angelica.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Cormorant Garamond';
+        src: url('/fonts/Cormorant_Garamond/CormorantGaramond-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'DM Sans';
+        src: url('/fonts/DM_Sans/DMSans-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    /* ...and so on for other fonts... */
         :root {
             --primary-color: #3498db;
             --danger-color: #e74c3c;
@@ -269,6 +314,73 @@
             border: 1px solid var(--border-color);
             border-radius: 5px;
             font-size: 14px;
+        }
+
+        /* Style for font family select */
+        #fontFamily option {
+            padding: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 25px;
+        }
+        
+        /* Apply the actual font to each option */
+        #fontFamily option[value="Alice"] { font-family: 'Alice'; }
+        #fontFamily option[value="Breathing"] { font-family: 'Breathing'; }
+        #fontFamily option[value="Brighter"] { font-family: 'Brighter'; }
+        #fontFamily option[value="Brittany"] { font-family: 'Brittany'; }
+        #fontFamily option[value="Bryndan Write"] { font-family: 'Bryndan Write'; }
+        #fontFamily option[value="Caitlin Angelica"] { font-family: 'Caitlin Angelica'; }
+        #fontFamily option[value="Chau Philomene One"] { font-family: 'Chau Philomene One'; }
+        #fontFamily option[value="Chewy"] { font-family: 'Chewy'; }
+        #fontFamily option[value="Chunkfive"] { font-family: 'Chunkfive'; }
+        #fontFamily option[value="Cormorant Garamond"] { font-family: 'Cormorant Garamond'; }
+        #fontFamily option[value="DM Sans"] { font-family: 'DM Sans'; }
+        #fontFamily option[value="DM Serif Display"] { font-family: 'DM Serif Display'; }
+        #fontFamily option[value="Forum"] { font-family: 'Forum'; }
+        #fontFamily option[value="Gentry Benedict"] { font-family: 'Gentry Benedict'; }
+        #fontFamily option[value="Hammersmith One"] { font-family: 'Hammersmith One'; }
+        #fontFamily option[value="Inria Serif"] { font-family: 'Inria Serif'; }
+        #fontFamily option[value="Inter"] { font-family: 'Inter'; }
+        #fontFamily option[value="League Gothic"] { font-family: 'League Gothic'; }
+        #fontFamily option[value="Libre Baskerville"] { font-family: 'Libre Baskerville'; }
+        #fontFamily option[value="Lora"] { font-family: 'Lora'; }
+        #fontFamily option[value="Merriweather"] { font-family: 'Merriweather'; }
+        #fontFamily option[value="More Sugar"] { font-family: 'More Sugar'; }
+        #fontFamily option[value="Nunito"] { font-family: 'Nunito'; }
+        #fontFamily option[value="Open Sans"] { font-family: 'Open Sans'; }
+        #fontFamily option[value="Oswald"] { font-family: 'Oswald'; }
+        #fontFamily option[value="Questrial"] { font-family: 'Questrial'; }
+        #fontFamily option[value="Quicksand"] { font-family: 'Quicksand'; }
+        #fontFamily option[value="Railey"] { font-family: 'Railey'; }
+        #fontFamily option[value="Raleway"] { font-family: 'Raleway'; }
+        #fontFamily option[value="Roboto"] { font-family: 'Roboto'; }
+        #fontFamily option[value="Shrikhand"] { font-family: 'Shrikhand'; }
+        #fontFamily option[value="Tenor Sans"] { font-family: 'Tenor Sans'; }
+        #fontFamily option[value="Yeseva One"] { font-family: 'Yeseva One'; }
+        #fontFamily option[value="Allura"] { font-family: 'Allura'; }
+        #fontFamily option[value="Anonymous Pro"] { font-family: 'Anonymous Pro'; }
+        #fontFamily option[value="Anton"] { font-family: 'Anton'; }
+        #fontFamily option[value="Arapey"] { font-family: 'Arapey'; }
+        #fontFamily option[value="Archivo Black"] { font-family: 'Archivo Black'; }
+        #fontFamily option[value="Arimo"] { font-family: 'Arimo'; }
+        #fontFamily option[value="Arial"] { font-family: Arial; }
+        #fontFamily option[value="Barlow"] { font-family: 'Barlow'; }
+        #fontFamily option[value="Bebas Neue"] { font-family: 'Bebas Neue'; }
+        #fontFamily option[value="Belleza"] { font-family: 'Belleza'; }
+        #fontFamily option[value="Bree Serif"] { font-family: 'Bree Serif'; }
+        #fontFamily option[value="Great Vibes"] { font-family: 'Great Vibes'; }
+        #fontFamily option[value="League Spartan"] { font-family: 'League Spartan'; }
+        #fontFamily option[value="Montserrat"] { font-family: 'Montserrat'; }
+        #fontFamily option[value="Playfair Display"] { font-family: 'Playfair Display'; }
+        #fontFamily option[value="Poppins"] { font-family: 'Poppins'; }
+        #fontFamily option[value="Times New Roman"] { font-family: "Times New Roman"; }
+        #fontFamily option[value="Helvetica"] { font-family: Helvetica; }
+
+        /* Style the select itself with the current font */
+        #fontFamily {
+            font-size: 14px;
+            line-height: 1.5;
         }
 
         .form-group input[type="text"]:focus,
@@ -724,10 +836,99 @@
                 <div class="form-group">
                     <label for="fontFamily">Font</label>
                     <select id="fontFamily">
+                        <option value="Alice">Alice</option>
+                        <option value="Breathing">Breathing</option>
+                        <option value="Brighter">Brighter</option>
+                        <option value="Brittany">Brittany</option>
+                        <option value="Bryndan Write">Bryndan Write</option>
+                        <option value="Caitlin Angelica">Caitlin Angelica</option>
+                        <option value="Chau Philomene One">Chau Philomene One</option>
+                        <option value="Chewy">Chewy</option>
+                        <option value="Chunkfive">Chunkfive</option>
+                        <option value="Cormorant Garamond">Cormorant Garamond</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="DM Serif Display">DM Serif Display</option>
+                        <option value="Forum">Forum</option>
+                        <option value="Gentry Benedict">Gentry Benedict</option>
+                        <option value="Hammersmith One">Hammersmith One</option>
+                        <option value="Inria Serif">Inria Serif</option>
+                        <option value="Inter">Inter</option>
+                        <option value="League Gothic">League Gothic</option>
+                        <option value="Libre Baskerville">Libre Baskerville</option>
+                        <option value="Lora">Lora</option>
+                        <option value="Merriweather">Merriweather</option>
+                        <option value="More Sugar">More Sugar</option>
+                        <option value="Nunito">Nunito</option>
+                        <option value="Open Sans">Open Sans</option>
+                        <option value="Oswald">Oswald</option>
+                        <option value="Questrial">Questrial</option>
+                        <option value="Quicksand">Quicksand</option>
+                        <option value="Railey">Railey</option>
+                        <option value="Raleway">Raleway</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Shrikhand">Shrikhand</option>
+                        <option value="Tenor Sans">Tenor Sans</option>
+                        <option value="Yeseva One">Yeseva One</option>
+                        <option value="Allura">Allura</option>
+                        <option value="Anonymous Pro">Anonymous Pro</option>
+                        <option value="Anton">Anton</option>
+                        <option value="Arapey">Arapey</option>
+                        <option value="Archivo Black">Archivo Black</option>
+                        <option value="Arimo">Arimo</option>
                         <option value="Arial">Arial</option>
+                        <option value="Barlow">Barlow</option>
+                        <option value="Bebas Neue">Bebas Neue</option>
+                        <option value="Belleza">Belleza</option>
+                        <option value="Bree Serif">Bree Serif</option>
+                        <option value="Great Vibes">Great Vibes</option>
+                        <option value="League Spartan">League Spartan</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Poppins">Poppins</option>
                         <option value="Times New Roman">Times New Roman</option>
                         <option value="Helvetica">Helvetica</option>
-                        <option value="Georgia">Georgia</option>
+                        <option value="Bebas Neue">Bebas Neue</option>
+                        <option value="Belleza">Belleza</option>
+                        <option value="Breathing">Breathing</option>
+                        <option value="Brighter">Brighter</option>
+                        <option value="Brittany">Brittany</option>
+                        <option value="Bree Serif">Bree Serif</option>
+                        <option value="Bryndan Write">Bryndan Write</option>
+                        <option value="Caitlin Angelica">Caitlin Angelica</option>
+                        <option value="Chau Philomene One">Chau Philomene One</option>
+                        <option value="Chewy">Chewy</option>
+                        <option value="Chunkfive">Chunkfive</option>
+                        <option value="Cormorant Garamond">Cormorant Garamond</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="DM Serif Display">DM Serif Display</option>
+                        <option value="Forum">Forum</option>
+                        <option value="Gentry Benedict">Gentry Benedict</option>
+                        <option value="Great Vibes">Great Vibes</option>
+                        <option value="Hammersmith One">Hammersmith One</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Inria Serif">Inria Serif</option>
+                        <option value="Inter">Inter</option>
+                        <option value="League Gothic">League Gothic</option>
+                        <option value="League Spartan">League Spartan</option>
+                        <option value="Libre Baskerville">Libre Baskerville</option>
+                        <option value="Lora">Lora</option>
+                        <option value="Merriweather">Merriweather</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="More Sugar">More Sugar</option>
+                        <option value="Nunito">Nunito</option>
+                        <option value="Open Sans">Open Sans</option>
+                        <option value="Oswald">Oswald</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Poppins">Poppins</option>
+                        <option value="Questrial">Questrial</option>
+                        <option value="Quicksand">Quicksand</option>
+                        <option value="Railey">Railey</option>
+                        <option value="Raleway">Raleway</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Shrikhand">Shrikhand</option>
+                        <option value="Tenor Sans">Tenor Sans</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Yeseva One">Yeseva One</option>
                     </select>
                 </div>
 
@@ -834,6 +1035,8 @@
     <script src="{{ asset('js/template-saver.js') }}"></script>
     <script src="{{ asset('js/placeholder-handler.js') }}"></script>
     <script src="{{ asset('js/template-preview.js') }}"></script>
+    <script src="{{ asset('js/font-handler.js') }}"></script>
+    <script src="{{ asset('js/custom-font-select.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <script src="{{ asset('js/element-handler.js') }}"></script>
     <script src="{{ asset('js/drag-handler.js') }}"></script>

@@ -17,77 +17,373 @@
             // Struktur ini lebih detail, memisahkan file untuk setiap kombinasi weight dan style.
             // Font mapping configurations
             $fontMappings = [
-                // Contoh untuk Poppins
-                'Poppins' => [
-                    'folder' => 'poppins',
+                'Alice' => [
+                    'folder' => 'Alice',
                     'variants' => [
-                        '400' => [
-                            'normal' => 'Poppins-Regular.ttf',
-                            'italic' => 'Poppins-Italic.ttf', // File untuk Poppins Italic
-                        ],
-                        '500' => [
-                            'normal' => 'Poppins-Medium.ttf',
-                            'italic' => 'Poppins-MediumItalic.ttf',
-                        ],
-                        '600' => [
-                            'normal' => 'Poppins-SemiBold.ttf',
-                            'italic' => 'Poppins-SemiBoldItalic.ttf',
-                        ],
-                        '700' => [
-                            'normal' => 'Poppins-Bold.ttf',
-                            'italic' => 'Poppins-BoldItalic.ttf', // File untuk Poppins Bold Italic
-                        ],
-                    ],
+                        '400' => ['normal' => 'Alice-Regular.ttf']
+                    ]
                 ],
-                // Contoh untuk Montserrat
-                'Montserrat' => [
-                    'folder' => 'montserrat',
+                'Breathing' => [
+                    'folder' => 'breathing',
                     'variants' => [
-                        '400' => [
-                            'normal' => 'Montserrat-Regular.ttf',
-                            'italic' => 'Montserrat-Italic.ttf',
-                        ],
-                        '700' => [
-                            'normal' => 'Montserrat-Bold.ttf',
-                            'italic' => 'Montserrat-BoldItalic.ttf',
-                        ],
-                    ],
+                        '400' => ['normal' => 'Breathing Personal Use Only.ttf']
+                    ]
                 ],
-                // Contoh untuk font yang hanya punya satu gaya (misal: Great Vibes)
+                'Brighter' => [
+                    'folder' => 'brighter',
+                    'variants' => [
+                        '400' => ['normal' => 'Brighter Regular.otf']
+                    ]
+                ],
+                'Brittany' => [
+                    'folder' => 'brittany_2',
+                    'variants' => [
+                        '400' => ['normal' => 'Brittany.ttf']
+                    ]
+                ],
+                'Bryndan Write' => [
+                    'folder' => 'Bryndan Write',
+                    'variants' => [
+                        '400' => ['normal' => 'BryndanWriteBook.ttf']
+                    ]
+                ],
+                'Caitlin Angelica' => [
+                    'folder' => 'caitlin_angelica',
+                    'variants' => [
+                        '400' => ['normal' => 'Caitlin Angelica.ttf', 'italic' => 'Caitlin Angelica Italic.ttf']
+                    ]
+                ],
+                'Chau Philomene One' => [
+                    'folder' => 'Chau_Philomene_One',
+                    'variants' => [
+                        '400' => ['normal' => 'ChauPhilomeneOne-Regular.ttf']
+                    ]
+                ],
+                'Chewy' => [
+                    'folder' => 'Chewy',
+                    'variants' => [
+                        '400' => ['normal' => 'Chewy-Regular.ttf']
+                    ]
+                ],
+                'Chunkfive' => [
+                    'folder' => 'chunkfive_ex',
+                    'variants' => [
+                        '400' => ['normal' => 'Chunkfive.ttf']
+                    ]
+                ],
+                'Cormorant Garamond' => [
+                    'folder' => 'Cormorant_Garamond',
+                    'variants' => [
+                        '400' => ['normal' => 'CormorantGaramond-Regular.ttf', 'italic' => 'CormorantGaramond-Italic.ttf'],
+                        '500' => ['normal' => 'CormorantGaramond-Medium.ttf', 'italic' => 'CormorantGaramond-MediumItalic.ttf'],
+                        '600' => ['normal' => 'CormorantGaramond-SemiBold.ttf', 'italic' => 'CormorantGaramond-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'CormorantGaramond-Bold.ttf', 'italic' => 'CormorantGaramond-BoldItalic.ttf']
+                    ]
+                ],
+                'DM Sans' => [
+                    'folder' => 'DM_Sans',
+                    'variants' => [
+                        '400' => ['normal' => 'DMSans-Regular.ttf', 'italic' => 'DMSans-Italic.ttf'],
+                        '500' => ['normal' => 'DMSans-Medium.ttf', 'italic' => 'DMSans-MediumItalic.ttf'],
+                        '700' => ['normal' => 'DMSans-Bold.ttf', 'italic' => 'DMSans-BoldItalic.ttf']
+                    ]
+                ],
+                'DM Serif Display' => [
+                    'folder' => 'DM_Serif_Display',
+                    'variants' => [
+                        '400' => ['normal' => 'DMSerifDisplay-Regular.ttf', 'italic' => 'DMSerifDisplay-Italic.ttf']
+                    ]
+                ],
+                'Forum' => [
+                    'folder' => 'Forum',
+                    'variants' => [
+                        '400' => ['normal' => 'Forum-Regular.ttf']
+                    ]
+                ],
+                'Gentry Benedict' => [
+                    'folder' => 'gentry_benedict',
+                    'variants' => [
+                        '400' => ['normal' => 'Gentry Benedict.otf']
+                    ]
+                ],
+                'Hammersmith One' => [
+                    'folder' => 'Hammersmith_One',
+                    'variants' => [
+                        '400' => ['normal' => 'HammersmithOne-Regular.ttf']
+                    ]
+                ],
+                'Inria Serif' => [
+                    'folder' => 'Inria_Serif',
+                    'variants' => [
+                        '400' => ['normal' => 'InriaSerif-Regular.ttf', 'italic' => 'InriaSerif-Italic.ttf'],
+                        '700' => ['normal' => 'InriaSerif-Bold.ttf', 'italic' => 'InriaSerif-BoldItalic.ttf']
+                    ]
+                ],
+                'Inter' => [
+                    'folder' => 'Inter',
+                    'variants' => [
+                        '400' => ['normal' => 'Inter-Regular.ttf'],
+                        '500' => ['normal' => 'Inter-Medium.ttf'],
+                        '600' => ['normal' => 'Inter-SemiBold.ttf'],
+                        '700' => ['normal' => 'Inter-Bold.ttf']
+                    ]
+                ],
+                'League Gothic' => [
+                    'folder' => 'League_Gothic',
+                    'variants' => [
+                        '400' => ['normal' => 'LeagueGothic-Regular.ttf']
+                    ]
+                ],
+                'Libre Baskerville' => [
+                    'folder' => 'Libre_Baskerville',
+                    'variants' => [
+                        '400' => ['normal' => 'LibreBaskerville-Regular.ttf', 'italic' => 'LibreBaskerville-Italic.ttf'],
+                        '700' => ['normal' => 'LibreBaskerville-Bold.ttf']
+                    ]
+                ],
+                'Lora' => [
+                    'folder' => 'Lora',
+                    'variants' => [
+                        '400' => ['normal' => 'Lora-Regular.ttf', 'italic' => 'Lora-Italic.ttf'],
+                        '500' => ['normal' => 'Lora-Medium.ttf', 'italic' => 'Lora-MediumItalic.ttf'],
+                        '600' => ['normal' => 'Lora-SemiBold.ttf', 'italic' => 'Lora-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'Lora-Bold.ttf', 'italic' => 'Lora-BoldItalic.ttf']
+                    ]
+                ],
+                'Merriweather' => [
+                    'folder' => 'Merriweather',
+                    'variants' => [
+                        '300' => ['normal' => 'Merriweather-Light.ttf', 'italic' => 'Merriweather-LightItalic.ttf'],
+                        '400' => ['normal' => 'Merriweather-Regular.ttf', 'italic' => 'Merriweather-Italic.ttf'],
+                        '700' => ['normal' => 'Merriweather-Bold.ttf', 'italic' => 'Merriweather-BoldItalic.ttf'],
+                        '900' => ['normal' => 'Merriweather-Black.ttf', 'italic' => 'Merriweather-BlackItalic.ttf']
+                    ]
+                ],
+                'More Sugar' => [
+                    'folder' => 'more_sugar',
+                    'variants' => [
+                        '400' => ['normal' => 'More Sugar.ttf']
+                    ]
+                ],
+                'Nunito' => [
+                    'folder' => 'Nunito',
+                    'variants' => [
+                        '200' => ['normal' => 'Nunito-ExtraLight.ttf', 'italic' => 'Nunito-ExtraLightItalic.ttf'],
+                        '300' => ['normal' => 'Nunito-Light.ttf', 'italic' => 'Nunito-LightItalic.ttf'],
+                        '400' => ['normal' => 'Nunito-Regular.ttf', 'italic' => 'Nunito-Italic.ttf'],
+                        '500' => ['normal' => 'Nunito-Medium.ttf', 'italic' => 'Nunito-MediumItalic.ttf'],
+                        '600' => ['normal' => 'Nunito-SemiBold.ttf', 'italic' => 'Nunito-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'Nunito-Bold.ttf', 'italic' => 'Nunito-BoldItalic.ttf'],
+                        '800' => ['normal' => 'Nunito-ExtraBold.ttf', 'italic' => 'Nunito-ExtraBoldItalic.ttf'],
+                        '900' => ['normal' => 'Nunito-Black.ttf', 'italic' => 'Nunito-BlackItalic.ttf']
+                    ]
+                ],
+                'Open Sans' => [
+                    'folder' => 'Open_Sans',
+                    'variants' => [
+                        '300' => ['normal' => 'OpenSans-Light.ttf', 'italic' => 'OpenSans-LightItalic.ttf'],
+                        '400' => ['normal' => 'OpenSans-Regular.ttf', 'italic' => 'OpenSans-Italic.ttf'],
+                        '500' => ['normal' => 'OpenSans-Medium.ttf', 'italic' => 'OpenSans-MediumItalic.ttf'],
+                        '600' => ['normal' => 'OpenSans-SemiBold.ttf', 'italic' => 'OpenSans-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'OpenSans-Bold.ttf', 'italic' => 'OpenSans-BoldItalic.ttf'],
+                        '800' => ['normal' => 'OpenSans-ExtraBold.ttf', 'italic' => 'OpenSans-ExtraBoldItalic.ttf']
+                    ]
+                ],
+                'Oswald' => [
+                    'folder' => 'Oswald',
+                    'variants' => [
+                        '200' => ['normal' => 'Oswald-ExtraLight.ttf'],
+                        '300' => ['normal' => 'Oswald-Light.ttf'],
+                        '400' => ['normal' => 'Oswald-Regular.ttf'],
+                        '500' => ['normal' => 'Oswald-Medium.ttf'],
+                        '600' => ['normal' => 'Oswald-SemiBold.ttf'],
+                        '700' => ['normal' => 'Oswald-Bold.ttf']
+                    ]
+                ],
+                'Questrial' => [
+                    'folder' => 'Questrial',
+                    'variants' => [
+                        '400' => ['normal' => 'Questrial-Regular.ttf']
+                    ]
+                ],
+                'Quicksand' => [
+                    'folder' => 'Quicksand',
+                    'variants' => [
+                        '300' => ['normal' => 'Quicksand-Light.ttf'],
+                        '400' => ['normal' => 'Quicksand-Regular.ttf'],
+                        '500' => ['normal' => 'Quicksand-Medium.ttf'],
+                        '600' => ['normal' => 'Quicksand-SemiBold.ttf'],
+                        '700' => ['normal' => 'Quicksand-Bold.ttf']
+                    ]
+                ],
+                'Railey' => [
+                    'folder' => 'railey',
+                    'variants' => [
+                        '400' => ['normal' => 'Railey.ttf']
+                    ]
+                ],
+                'Raleway' => [
+                    'folder' => 'Raleway',
+                    'variants' => [
+                        '100' => ['normal' => 'Raleway-Thin.ttf', 'italic' => 'Raleway-ThinItalic.ttf'],
+                        '200' => ['normal' => 'Raleway-ExtraLight.ttf', 'italic' => 'Raleway-ExtraLightItalic.ttf'],
+                        '300' => ['normal' => 'Raleway-Light.ttf', 'italic' => 'Raleway-LightItalic.ttf'],
+                        '400' => ['normal' => 'Raleway-Regular.ttf', 'italic' => 'Raleway-Italic.ttf'],
+                        '500' => ['normal' => 'Raleway-Medium.ttf', 'italic' => 'Raleway-MediumItalic.ttf'],
+                        '600' => ['normal' => 'Raleway-SemiBold.ttf', 'italic' => 'Raleway-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'Raleway-Bold.ttf', 'italic' => 'Raleway-BoldItalic.ttf'],
+                        '800' => ['normal' => 'Raleway-ExtraBold.ttf', 'italic' => 'Raleway-ExtraBoldItalic.ttf'],
+                        '900' => ['normal' => 'Raleway-Black.ttf', 'italic' => 'Raleway-BlackItalic.ttf']
+                    ]
+                ],
+                'Roboto' => [
+                    'folder' => 'Roboto',
+                    'variants' => [
+                        '100' => ['normal' => 'Roboto-Thin.ttf', 'italic' => 'Roboto-ThinItalic.ttf'],
+                        '300' => ['normal' => 'Roboto-Light.ttf', 'italic' => 'Roboto-LightItalic.ttf'],
+                        '400' => ['normal' => 'Roboto-Regular.ttf', 'italic' => 'Roboto-Italic.ttf'],
+                        '500' => ['normal' => 'Roboto-Medium.ttf', 'italic' => 'Roboto-MediumItalic.ttf'],
+                        '700' => ['normal' => 'Roboto-Bold.ttf', 'italic' => 'Roboto-BoldItalic.ttf'],
+                        '900' => ['normal' => 'Roboto-Black.ttf', 'italic' => 'Roboto-BlackItalic.ttf']
+                    ]
+                ],
+                'Shrikhand' => [
+                    'folder' => 'Shrikhand',
+                    'variants' => [
+                        '400' => ['normal' => 'Shrikhand-Regular.ttf']
+                    ]
+                ],
+                'Tenor Sans' => [
+                    'folder' => 'Tenor_Sans',
+                    'variants' => [
+                        '400' => ['normal' => 'TenorSans-Regular.ttf']
+                    ]
+                ],
+                'Yeseva One' => [
+                    'folder' => 'Yeseva_One',
+                    'variants' => [
+                        '400' => ['normal' => 'YesevaOne-Regular.ttf']
+                    ]
+                ],
+                'Allura' => [
+                    'folder' => 'Allura',
+                    'variants' => [
+                        '400' => ['normal' => 'Allura-Regular.ttf']
+                    ]
+                ],
+                'Anonymous Pro' => [
+                    'folder' => 'Anonymous_Pro',
+                    'variants' => [
+                        '400' => ['normal' => 'AnonymousPro-Regular.ttf', 'italic' => 'AnonymousPro-Italic.ttf'],
+                        '700' => ['normal' => 'AnonymousPro-Bold.ttf', 'italic' => 'AnonymousPro-BoldItalic.ttf']
+                    ]
+                ],
+                'Anton' => [
+                    'folder' => 'Anton',
+                    'variants' => [
+                        '400' => ['normal' => 'Anton-Regular.ttf']
+                    ]
+                ],
+                'Arapey' => [
+                    'folder' => 'Arapey',
+                    'variants' => [
+                        '400' => ['normal' => 'Arapey-Regular.ttf', 'italic' => 'Arapey-Italic.ttf']
+                    ]
+                ],
+                'Archivo Black' => [
+                    'folder' => 'Archivo_Black',
+                    'variants' => [
+                        '400' => ['normal' => 'ArchivoBlack-Regular.ttf']
+                    ]
+                ],
+                'Arimo' => [
+                    'folder' => 'Arimo',
+                    'variants' => [
+                        '400' => ['normal' => 'Arimo-Regular.ttf', 'italic' => 'Arimo-Italic.ttf'],
+                        '500' => ['normal' => 'Arimo-Medium.ttf', 'italic' => 'Arimo-MediumItalic.ttf'],
+                        '600' => ['normal' => 'Arimo-SemiBold.ttf', 'italic' => 'Arimo-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'Arimo-Bold.ttf', 'italic' => 'Arimo-BoldItalic.ttf']
+                    ]
+                ],
+                'Barlow' => [
+                    'folder' => 'Barlow',
+                    'variants' => [
+                        '100' => ['normal' => 'Barlow-Thin.ttf', 'italic' => 'Barlow-ThinItalic.ttf'],
+                        '200' => ['normal' => 'Barlow-ExtraLight.ttf', 'italic' => 'Barlow-ExtraLightItalic.ttf'],
+                        '300' => ['normal' => 'Barlow-Light.ttf', 'italic' => 'Barlow-LightItalic.ttf'],
+                        '400' => ['normal' => 'Barlow-Regular.ttf', 'italic' => 'Barlow-Italic.ttf'],
+                        '500' => ['normal' => 'Barlow-Medium.ttf', 'italic' => 'Barlow-MediumItalic.ttf'],
+                        '600' => ['normal' => 'Barlow-SemiBold.ttf', 'italic' => 'Barlow-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'Barlow-Bold.ttf', 'italic' => 'Barlow-BoldItalic.ttf'],
+                        '800' => ['normal' => 'Barlow-ExtraBold.ttf', 'italic' => 'Barlow-ExtraBoldItalic.ttf'],
+                        '900' => ['normal' => 'Barlow-Black.ttf', 'italic' => 'Barlow-BlackItalic.ttf']
+                    ]
+                ],
+                'Bebas Neue' => [
+                    'folder' => 'Bebas_Neue',
+                    'variants' => [
+                        '400' => ['normal' => 'BebasNeue-Regular.ttf']
+                    ]
+                ],
+                'Belleza' => [
+                    'folder' => 'Belleza',
+                    'variants' => [
+                        '400' => ['normal' => 'Belleza-Regular.ttf']
+                    ]
+                ],
+                'Bree Serif' => [
+                    'folder' => 'Bree_Serif',
+                    'variants' => [
+                        '400' => ['normal' => 'BreeSerif-Regular.ttf']
+                    ]
+                ],
                 'Great Vibes' => [
                     'folder' => 'Great_Vibes',
                     'variants' => [
-                        '400' => [
-                            'normal' => 'GreatVibes-Regular.ttf',
-                        ],
-                    ],
+                        '400' => ['normal' => 'GreatVibes-Regular.ttf']
+                    ]
                 ],
-                 'Allura' => [
-                    'folder' => 'Allura',
-                    'variants' => [
-                        '400' => ['normal' => 'Allura-Regular.ttf'],
-                    ],
-                ],
-                // Tambahkan font lain di sini dengan struktur yang sama...
                 'League Spartan' => [
                     'folder' => 'League_Spartan',
                     'variants' => [
                         '400' => ['normal' => 'LeagueSpartan-Regular.ttf'],
-                        '700' => ['normal' => 'LeagueSpartan-Bold.ttf'],
+                        '700' => ['normal' => 'LeagueSpartan-Bold.ttf']
                     ]
                 ],
-                 'Playfair Display' => [
-                    'folder' => 'playfair-display',
+                'Montserrat' => [
+                    'folder' => 'Montserrat',
+                    'variants' => [
+                        '400' => ['normal' => 'Montserrat-Regular.ttf', 'italic' => 'Montserrat-Italic.ttf'],
+                        '500' => ['normal' => 'Montserrat-Medium.ttf', 'italic' => 'Montserrat-MediumItalic.ttf'],
+                        '600' => ['normal' => 'Montserrat-SemiBold.ttf', 'italic' => 'Montserrat-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'Montserrat-Bold.ttf', 'italic' => 'Montserrat-BoldItalic.ttf']
+                    ]
+                ],
+                'Playfair Display' => [
+                    'folder' => 'Playfair_Display',
                     'variants' => [
                         '400' => ['normal' => 'PlayfairDisplay-Regular.ttf', 'italic' => 'PlayfairDisplay-Italic.ttf'],
-                        '700' => ['normal' => 'PlayfairDisplay-Bold.ttf', 'italic' => 'PlayfairDisplay-BoldItalic.ttf'],
+                        '700' => ['normal' => 'PlayfairDisplay-Bold.ttf', 'italic' => 'PlayfairDisplay-BoldItalic.ttf']
                     ]
                 ],
-                // Font sistem sebagai fallback
-                'Arial' => ['type' => 'system'],
-                'Times New Roman' => ['type' => 'system'],
-                'Helvetica' => ['type' => 'system'],
-            ];
+                'Poppins' => [
+                    'folder' => 'Poppins',
+                    'variants' => [
+                        '100' => ['normal' => 'Poppins-Thin.ttf', 'italic' => 'Poppins-ThinItalic.ttf'],
+                        '200' => ['normal' => 'Poppins-ExtraLight.ttf', 'italic' => 'Poppins-ExtraLightItalic.ttf'],
+                        '300' => ['normal' => 'Poppins-Light.ttf', 'italic' => 'Poppins-LightItalic.ttf'],
+                        '400' => ['normal' => 'Poppins-Regular.ttf', 'italic' => 'Poppins-Italic.ttf'],
+                        '500' => ['normal' => 'Poppins-Medium.ttf', 'italic' => 'Poppins-MediumItalic.ttf'],
+                        '600' => ['normal' => 'Poppins-SemiBold.ttf', 'italic' => 'Poppins-SemiBoldItalic.ttf'],
+                        '700' => ['normal' => 'Poppins-Bold.ttf', 'italic' => 'Poppins-BoldItalic.ttf'],
+                        '800' => ['normal' => 'Poppins-ExtraBold.ttf', 'italic' => 'Poppins-ExtraBoldItalic.ttf'],
+                        '900' => ['normal' => 'Poppins-Black.ttf', 'italic' => 'Poppins-BlackItalic.ttf']
+                    ]
+                ],
+                    'Arial' => ['type' => 'system'],
+                    'Times New Roman' => ['type' => 'system'],
+                    'Helvetica' => ['type' => 'system']
+                ];
 
             $pageWidth = 842;
             $pageHeight = 595;
@@ -136,88 +432,71 @@
             }
         }
 
-        /* --- Muat hanya font yang dipakai oleh elemen (embed base64) --- */
+        /* --- Load and embed required fonts --- */
             @php
-            // Kumpulkan daftar font yang diperlukan dari elemen
-            // Untuk setiap elemen teks yang punya folder, coba temukan file font nyata yang cocok
+            // Collect required fonts from elements
             $requiredFonts = [];
             if (isset($elements) && is_array($elements)) {
                 foreach ($elements as $el) {
                     if (!isset($el['type']) || $el['type'] !== 'text') continue;
+                    
+                    // Get font configuration
                     $f = isset($el['font']) ? $el['font'] : null;
                     if (!$f) continue;
 
-                    // Resolve folder: prefer explicit folder, otherwise attempt to map from font family
-                    $folder = isset($f['folder']) ? $f['folder'] : null;
-                    if (!$folder && isset($f['family'])) {
-                        $fontsRoot = public_path('fonts');
-                        if (is_dir($fontsRoot)) {
-                            foreach (scandir($fontsRoot) as $dirItem) {
-                                if (in_array($dirItem, ['.', '..'])) continue;
-                                if (!is_dir($fontsRoot . DIRECTORY_SEPARATOR . $dirItem)) continue;
-                                $san1 = strtolower(preg_replace('/[^a-z0-9]/', '', $dirItem));
-                                $san2 = strtolower(preg_replace('/[^a-z0-9]/', '', $f['family']));
-                                if ($san1 === $san2) { $folder = $dirItem; break; }
-                            }
-                        }
-                    }
-                    if (!$folder) continue;
-                    $requestedFile = isset($f['weightFile']) ? $f['weightFile'] : null;
+                    // Get font family and look up in mappings
+                    $fontFamily = isset($f['family']) ? $f['family'] : null;
+                    if (!$fontFamily || !isset($fontMappings[$fontFamily])) continue;
+
+                    $fontInfo = $fontMappings[$fontFamily];
+                    if (isset($fontInfo['type']) && $fontInfo['type'] === 'system') continue;
+
+                    // Get font details
+                    $folder = $fontInfo['folder'];
+                    $weight = isset($f['weight']) ? $f['weight'] : '400';
                     $style = isset($f['style']) ? $f['style'] : 'normal';
-                    $weight = isset($f['cssWeight']) ? $f['cssWeight'] : (isset($f['weight']) ? $f['weight'] : '400');
-
-                    $folderPath = public_path('fonts/'. $folder);
-                    $resolvedFile = null;
-
-                    // If the requestedFile looks like an actual filename and exists, use it
-                    if ($requestedFile && preg_match('/\.(ttf|otf|woff2?|woff)$/i', $requestedFile)) {
-                        $candidate = $folderPath . DIRECTORY_SEPARATOR . $requestedFile;
-                        if (file_exists($candidate)) {
-                            $resolvedFile = $requestedFile;
-                        }
+                    
+                    // Get the variant file
+                    $variantFile = null;
+                    if (isset($fontInfo['variants'][$weight][$style])) {
+                        $variantFile = $fontInfo['variants'][$weight][$style];
+                    } elseif (isset($fontInfo['variants'][$weight]['normal'])) {
+                        $variantFile = $fontInfo['variants'][$weight]['normal'];
+                    } elseif (isset($fontInfo['variants']['400']['normal'])) {
+                        $variantFile = $fontInfo['variants']['400']['normal'];
                     }
 
-                    // Otherwise, try to scan folder and pick the best candidate matching style/weight
-                    if (!$resolvedFile && is_dir($folderPath)) {
-                        $filesInFolder = array_values(array_filter(scandir($folderPath), function($fn) use ($folderPath) {
-                            if (in_array($fn, ['.', '..'])) return false;
-                            return preg_match('/\.(ttf|otf|woff2?|woff)$/i', $fn) && is_file($folderPath . DIRECTORY_SEPARATOR . $fn);
-                        }));
-
-                        // Prefer italic files if style requested
-                        if ($style === 'italic') {
-                            foreach ($filesInFolder as $ff) {
-                                if (stripos($ff, 'italic') !== false) { $resolvedFile = $ff; break; }
-                            }
-                        }
-
-                        // Try matching by weight token
-                        if (!$resolvedFile) {
-                            foreach ($filesInFolder as $ff) {
-                                $low = strtolower($ff);
-                                if (strpos($low, (string)$weight) !== false) { $resolvedFile = $ff; break; }
-                                // common tokens
-                                if ($weight == '400' && (strpos($low, 'regular') !== false || strpos($low, '-regular') !== false)) { $resolvedFile = $ff; break; }
-                                if ($weight == '700' && (strpos($low, 'bold') !== false || strpos($low, '-bold') !== false)) { $resolvedFile = $ff; break; }
-                                if ($weight == '600' && (strpos($low, 'semibold') !== false || strpos($low, 'semi') !== false)) { $resolvedFile = $ff; break; }
-                            }
-                        }
-
-                        // Fallback to first file
-                        if (!$resolvedFile && count($filesInFolder) > 0) {
-                            $resolvedFile = $filesInFolder[0];
+                    if ($folder && $variantFile) {
+                        $key = "{$folder}||{$variantFile}||{$weight}||{$style}";
+                        if (!isset($requiredFonts[$key])) {
+                            $requiredFonts[$key] = [
+                                'folder' => $folder,
+                                'file' => $variantFile,
+                                'weight' => $weight,
+                                'style' => $style
+                            ];
                         }
                     }
+                }
+            }
 
-                    if ($resolvedFile) {
-                        $key = $folder . '||' . $resolvedFile . '||' . $weight . '||' . $style;
-                        $requiredFonts[$key] = [
-                            'folder' => $folder,
-                            'file' => $resolvedFile,
-                            'weight' => $weight,
-                            'style' => $style,
-                        ];
-                    }
+            // Generate @font-face declarations for each required font
+            foreach ($requiredFonts as $key => $info) {
+                $fontPath = public_path('fonts/' . $info['folder'] . '/' . $info['file']);
+                if (file_exists($fontPath)) {
+                    $fontBase64 = base64_encode(file_get_contents($fontPath));
+                    $ext = strtolower(pathinfo($info['file'], PATHINFO_EXTENSION));
+                    $format = $ext === 'otf' ? 'opentype' : 
+                             ($ext === 'woff2' ? 'woff2' : 
+                             ($ext === 'woff' ? 'woff' : 'truetype'));
+                    
+                    echo "@font-face {
+                        font-family: '{$info['folder']}';
+                        src: url('data:font/{$format};charset=utf-8;base64,{$fontBase64}') format('{$format}');
+                        font-weight: {$info['weight']};
+                        font-style: {$info['style']};
+                        font-display: swap;
+                    }\n";
                 }
             }
 
@@ -391,6 +670,27 @@
             word-wrap: break-word;  /* Enable word wrapping */
         }
 
+        /* Font loading for custom fonts */
+        @foreach($fontMappings as $fontFamily => $fontInfo)
+            @if(!isset($fontInfo['type']) || $fontInfo['type'] !== 'system')
+                @foreach($fontInfo['variants'] as $weight => $styles)
+                    @foreach($styles as $style => $filename)
+                        @php
+                        $fontPath = public_path('fonts/' . $fontInfo['folder'] . '/' . $filename);
+                        @endphp
+                        @if(file_exists($fontPath))
+                            @font-face {
+                                font-family: '{{ $fontFamily }}';
+                                src: url('{{ asset("fonts/" . $fontInfo["folder"] . "/" . $filename) }}') format('{{ pathinfo($filename, PATHINFO_EXTENSION) === 'otf' ? 'opentype' : 'truetype' }}');
+                                font-weight: {{ $weight }};
+                                font-style: {{ $style }};
+                            }
+                        @endif
+                    @endforeach
+                @endforeach
+            @endif
+        @endforeach
+
         .element-qrcode {
             display: block;
             background: white;
@@ -544,14 +844,44 @@
                             $displayCss = $applySkewFallback ? 'display: inline-block;' : '';
 
                                 // Use px units for on-screen rendering so positions match editor
-                                $style = "
+                                // Get font family from the element's configuration
+                            $fontFamilyName = isset($element['font']['family']) ? $element['font']['family'] : 'Arial';
+                            
+                            // Check if it's a custom font from our mappings
+                            if (isset($fontMappings[$fontFamilyName])) {
+                                $fontInfo = $fontMappings[$fontFamilyName];
+                                if (isset($fontInfo['type']) && $fontInfo['type'] === 'system') {
+                                    // For system fonts, use as is
+                                    $fontFamilyCSS = $fontFamilyName;
+                                } else {
+                                    // For custom fonts, ensure we have the font loaded
+                                    $fontFolder = $fontInfo['folder'];
+                                    // Add the font to required fonts if not already added
+                                    $fontKey = $fontFolder . '||' . $fontFamilyName . '||' . $fontWeight . '||' . $fontStyle;
+                                    if (!isset($requiredFonts[$fontKey])) {
+                                        $requiredFonts[$fontKey] = [
+                                            'folder' => $fontFolder,
+                                            'weight' => $fontWeight,
+                                            'style' => $fontStyle
+                                        ];
+                                    }
+                                    // Use both the custom font and fallback
+                                    $fontFamilyCSS = "'{$fontFamilyName}', Arial";
+                                }
+                            } else {
+                                // Fallback to Arial if font not found in mappings
+                                $fontFamilyCSS = 'Arial';
+                            }
+
+                            $style = "
                                 position: absolute;
                                 left: {$x}px;
                                 top: {$y}px;
-                                font-family: '{$generatedFamily}', Arial, sans-serif;
+                                font-family: {$fontFamilyCSS};
                                 font-size: {$fontSize}px;
                                 font-weight: {$fontWeight};
                                 font-style: {$fontStyle};
+                                text-align: {$textAlign};
                                 color: {$color};
                                 {$displayCss}
                                 {$transformCss}
