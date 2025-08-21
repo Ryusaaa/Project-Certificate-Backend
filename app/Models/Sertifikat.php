@@ -47,7 +47,9 @@ class Sertifikat extends Model
             'recipient_name' => $data['recipient_name'],
             'certificate_number' => $data['certificate_number'],
             'user_id' => $data['user_id'] ?? null,
-            'expires_at' => $data['expires_at'] ?? null
+            'expires_at' => $data['expires_at'] ?? null,
+            'data_activity_id' => $data['data_activity_id'] ?? null,
+            'merchant_id' => $data['merchant_id'] ?? null,
         ]);
     }
 

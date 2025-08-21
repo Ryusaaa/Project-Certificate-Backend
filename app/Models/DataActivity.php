@@ -58,4 +58,9 @@ class DataActivity extends Model
                     ->withPivot('status', 'is_active', 'sent_by_admin_name', 'created_at')
                     ->withTimestamps();
     }
+
+    public function certificateDownloads()
+    {
+        return $this->hasMany(CertificateDownload::class);
+    }
 }

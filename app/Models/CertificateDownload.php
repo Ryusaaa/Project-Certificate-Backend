@@ -8,6 +8,8 @@ use App\Traits\BelongsToMerchant;
 class CertificateDownload extends Model
 {
     use BelongsToMerchant;
+
+    protected $table = 'certificate_downloads';
     protected $fillable = [
         'sertifikat_id',
         'token',
@@ -17,7 +19,8 @@ class CertificateDownload extends Model
         'user_id',
         'expires_at',
         'download_count',
-        'merchant_id'
+        'merchant_id',
+        'data_activity_id'
     ];
 
     protected $casts = [
@@ -55,5 +58,10 @@ class CertificateDownload extends Model
     public function incrementDownloadCount()
     {
         $this->increment('download_count');
+    }
+
+    public function dataActivity()
+    {
+        return $this->belongsTo(DataActivity::class);
     }
 }

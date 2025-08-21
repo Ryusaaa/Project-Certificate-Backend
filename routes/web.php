@@ -94,6 +94,8 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::get('/users/{userId}/certificates', [SertifikatPesertaController::class, 'getUserCertificates']); // Endpoint buat halaman peserta
 });
 
+Route::post('sertifikat/validate/peserta', [SertifikatPesertaController::class, 'getCertificateByNumber']);
+
 Route::get('/latest-qrcode', function () {
     // Get latest QR code from storage
     $files = Storage::disk('public')->files('qrcodes');

@@ -137,13 +137,13 @@ class UserController extends Controller
                     'regex:/^(62|08)[0-9]{7,13}$/'
                 ],
                 'asal_institusi' => 'required|string|max:255',
-                'password' => 'required|string|min:8|confirmed',
+                'password' => 'nullable|string|min:8|',
                 'role_id' => 'required|exists:roles,id',
             ], [
                 'email.unique' => 'Email sudah terdaftar',
-                'password.required' => 'Password harus diisi',
-                'password.min' => 'Password minimal 8 karakter',
-                'password.confirmed' => 'Konfirmasi password tidak sesuai',
+                // 'password.required' => 'Password harus diisi',
+                // 'password.min' => 'Password minimal 8 karakter',
+                // 'password.confirmed' => 'Konfirmasi password tidak sesuai',
                 'no_hp.regex' => 'Nomor HP harus diawali 62 atau 08 dan terdiri dari 8-15 digit angka',
                 'no_hp.required' => 'Nomor HP harus diisi',
                 'asal_institusi.required' => 'Asal institusi harus diisi',
@@ -159,8 +159,8 @@ class UserController extends Controller
                 ], 422);
             }
 
-            $validated = $validator->validated();
-            $validated['password'] = bcrypt($validated['password']);
+            // $validated = $validator->validated();
+            // $validated['password'] = bcrypt($validated['password']);
             
             $loggedInUser = auth('sanctum')->user();
             $validated['merchant_id'] = $loggedInUser ? $loggedInUser->merchant_id : 1;

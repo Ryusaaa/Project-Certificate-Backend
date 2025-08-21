@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Sertifikat;
 
+use App\Helpers\EmailHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Sertifikat;
 use App\Models\CertificateDownload;
 use App\Models\UserCertificate;
 use App\Models\User;
 use App\Mail\CertificateGenerated;
+use App\Models\DataActivity;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -167,7 +169,7 @@ class SertifikatPesertaController extends Controller
     public function generatePDF(Request $request, $id)
     {
         try {
-            // Validate request
+            // Validate request - simplified for preview
             $validated = $request->validate([
                 'recipient_name' => 'required|string',
                 'certificate_number' => 'required|string',
@@ -185,14 +187,10 @@ class SertifikatPesertaController extends Controller
                 ], 404);
             }
 
-            
             // Format date
             setlocale(LC_TIME, 'id_ID');
             Carbon::setLocale('id');
             $dateText = Carbon::parse($validated['date'])->translatedFormat('d F Y');
-
-            // Get QR code image
-            $qrCodeImage = $this->getQRCodeFromCertificate($validated['certificate_number']);
             
             // Process template elements
             $templateElements = is_array($template->elements) ? $template->elements : [];
@@ -220,7 +218,7 @@ class SertifikatPesertaController extends Controller
                 '{NAMA}' => $validated['recipient_name'],
                 '{NOMOR}' => $validated['certificate_number'],
                 '{TANGGAL}' => $dateText,
-                '{INSTRUKTUR}' => $validated['instruktur'] ?? ''  // Menggunakan instruktur dari request
+                '{INSTRUKTUR}' => $validated['instruktur']
             ]);
 
             // Prepare PDF data
@@ -238,9 +236,8 @@ class SertifikatPesertaController extends Controller
 
             // Generate filename
             $filename = sprintf(
-                'sertifikat_%s_%s_%s.pdf',
+                'preview_sertifikat_%s_%s.pdf',
                 Str::slug($validated['recipient_name']),
-                Str::slug($validated['certificate_number']),
                 now()->format('Ymd_His')
             );
 
@@ -567,9 +564,10 @@ class SertifikatPesertaController extends Controller
                 'recipients.*.email' => 'required|email',
                 'certificate_number_format' => 'nullable|string',
                 'merchant_id' => 'required',
-                'instruktur' => 'required|string'  // Memastikan instruktur wajib diisi
+                'data_activity_id' => 'required|exists:data_activity,id',
+                'instruktur' => 'required|string',
             ]);
-
+            
             // Get template
             $template = Sertifikat::find($id);
             if (!$template) {
@@ -582,7 +580,7 @@ class SertifikatPesertaController extends Controller
             $generatedPDFs = [];
 
             foreach ($validated['recipients'] as $recipient) {
-                // Format date for each recipient
+
                 setlocale(LC_TIME, 'id_ID');
                 Carbon::setLocale('id');
                 $dateText = Carbon::parse($recipient['date'])->translatedFormat('d F Y');
@@ -616,11 +614,8 @@ class SertifikatPesertaController extends Controller
                     '{NAMA}' => $recipient['recipient_name'],
                     '{NOMOR}' => $certificateNumber,
                     '{TANGGAL}' => $dateText,
-                    '{INSTRUKTUR}' => $validated['instruktur']  // Use instructor from validated request
+                    '{INSTRUKTUR}' => $validated['instruktur']
                 ]);
-
-                // Generate certificate number
-                $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format'] ?? null);
 
                 // Generate unique filename and token for each recipient
                 $filename = sprintf(
@@ -630,7 +625,7 @@ class SertifikatPesertaController extends Controller
                     now()->format('Ymd_His')
                 );
                 
-                $downloadToken = Str::random(12); // Generate secure token
+                $downloadToken = Str::random(12);
 
                 // Prepare PDF data with processed elements
                 $data = [
@@ -657,89 +652,51 @@ class SertifikatPesertaController extends Controller
                     'recipient_name' => $recipient['recipient_name'],
                     'certificate_number' => $certificateNumber,
                     'user_id' => $user ? $user->id : null,
-                    'expires_at' => now()->addDays(30) // Token berlaku 30 hari
+                    'expires_at' => now()->addDays(30),
+                    'merchant_id' => $validated['merchant_id'], // pastikan ini ada
+                    'data_activity_id' => $validated['data_activity_id'], // pastikan ini ada
+                    'sertifikat_id' => $id
                 ]);
 
-                // Find or create user certificate
-                $user = User::where('email', $recipient['email'])->first();
+                // Debug: Log created download
+                    Log::info('Certificate Download Created:', [
+                    'id' => $download->id,
+                    'merchant_id' => $download->merchant_id,
+                    'data_activity_id' => $download->data_activity_id
+                ]);
+
+                // Create UserCertificate if user exists
                 $userCertificate = null;
                 if ($user) {
                     Log::info('Creating UserCertificate for user:', [
                         'user_id' => $user->id,
                         'download_id' => $download->id,
-                        'merchant_id' => $validated['merchant_id']
+                        'merchant_id' => $validated['merchant_id'],
+                        'data_activity_id' => $validated['data_activity_id']
                     ]);
 
                     $userCertificate = UserCertificate::create([
                         'user_id' => $user->id,
+                        'data_activity_id' => $validated['data_activity_id'], // Use validated data directly
                         'certificate_download_id' => $download->id,
                         'assigned_at' => now(),
                         'status' => 'active',
-                        'merchant_id' => $validated['merchant_id'],
+                        'merchant_id' => $validated['merchant_id'], // Use validated data directly
                         'qrcode_path' => 'qrcodes/' . $downloadToken . '.png'
                     ]);
 
                     if (!$userCertificate) {
                         Log::error('Failed to create UserCertificate');
                     } else {
-                        Log::info('UserCertificate created successfully with ID: ' . $userCertificate->id);
+                        Log::info('UserCertificate created successfully:', $userCertificate->toArray());
                     }
                 } else {
                     Log::warning('User not found for email: ' . $recipient['email']);
                 }
 
-                // Refresh to ensure we have the latest data
-                if ($userCertificate) {
-                    $userCertificate->refresh();
-                }
-
-                // Get template elements
-                $templateElements = is_array($template->elements) ? $template->elements : [];
-            
-                // Remove any existing QR code elements
-                $templateElements = array_filter($templateElements, function($el) {
-                    return $el['type'] !== 'qrcode';
-                });
-                
-                // Add new QR code element with both content and qrcode properties
-                $templateElements[] = [
-                    'type' => 'qrcode',
-                    'x' => 700,
-                    'y' => 450,
-                    'width' => 120,
-                    'height' => 120,
-                    'content' => $certificateNumber,
-                    'qrcode' => $this->getQRCodeFromCertificate($certificateNumber)
-                ];
-                
-                // Now process all elements including the QR code
-                $elements = $this->prepareElements($templateElements, [
-                    '{NAMA}' => $recipient['recipient_name'],
-                    '{NOMOR}' => $certificateNumber,
-                    '{TANGGAL}' => $dateText,
-                    '{INSTRUKTUR}' => $template->instruktur ?? ''
-                ]);
-
-                // Prepare PDF data
-                $data = [
-                    'template' => $template,
-                    'elements' => $elements,
-                    'background_image' => Storage::disk('public')->path($template->background_image),
-                    'pageWidth' => $this->pdfWidth,
-                    'pageHeight' => $this->pdfHeight
-                ];
-
-                // Generate PDF
-                $pdf = PDF::loadView('sertifikat.template', $data)
-                         ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
-
-                // Save to storage
-                $pdfPath = 'certificates/generated/' . $filename;
-                Storage::disk('public')->put($pdfPath, $pdf->output());
-
-                // Send email with certificate using PHPMailer
+                // Email sending logic remains the same
                 try {
-                    $emailSent = \App\Helpers\EmailHelper::sendCertificateEmail(
+                    $emailSent = EmailHelper::sendCertificateEmail(
                         $recipient['email'],
                         $recipient['recipient_name'],
                         $certificateNumber,
@@ -760,11 +717,10 @@ class SertifikatPesertaController extends Controller
                     ]);
                 }
 
-                // Add to generated PDFs array
                 $generatedPDFs[] = [
                     'recipient_name' => $recipient['recipient_name'],
                     'certificate_number' => $certificateNumber,
-                    'view_url' => '/storage/' . $pdfPath,
+                    'view_url' => '/storage/certificates/generated/' . $filename,
                     'download_url' => '/sertifikat-templates/download/' . $downloadToken,
                     'download_token' => $downloadToken,
                     'email_sent' => true
@@ -779,6 +735,7 @@ class SertifikatPesertaController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error generating bulk PDFs: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
@@ -835,6 +792,46 @@ class SertifikatPesertaController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data sertifikat: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCertificateByNumber() 
+    {
+        try {
+            $certificateNumber = request()->input('certificate_number');
+            if (empty($certificateNumber)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Nomor sertifikat tidak boleh kosong'
+                ], 400);
+            }
+
+            // Find the certificate download by number
+            $certificateDownload = CertificateDownload::where('certificate_number', $certificateNumber)->first();
+            if (!$certificateDownload) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Sertifikat tidak ditemukan'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'activity_name' => $certificateDownload->dataActivity->activity_name,
+                    'date' => $certificateDownload->dataActivity->date,
+                    'certificate_number' => $certificateDownload->certificate_number,
+                    'recipient_name' => $certificateDownload->recipient_name,
+                    'instruktur_name' => $certificateDownload->dataActivity->instruktur->name,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching certificate by number: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
