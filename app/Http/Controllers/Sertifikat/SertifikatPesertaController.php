@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Sertifikat;
 
-use App\Helpers\EmailHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Sertifikat;
 use App\Models\CertificateDownload;
@@ -694,24 +693,17 @@ class SertifikatPesertaController extends Controller
                     Log::warning('User not found for email: ' . $recipient['email']);
                 }
 
-                // Email sending logic remains the same
+
+                // Kirim email via queue menggunakan Laravel Mailable
                 try {
-                    $emailSent = EmailHelper::sendCertificateEmail(
-                        $recipient['email'],
+                    Mail::to($recipient['email'])->queue(new \App\Mail\CertificateGenerated(
                         $recipient['recipient_name'],
                         $certificateNumber,
                         url('/sertifikat-templates/download/' . $downloadToken),
                         $pdf->output()
-                    );
-
-                    if (!$emailSent) {
-                        Log::warning('Email might not have been sent successfully', [
-                            'recipient' => $recipient['email'],
-                            'certificate' => $certificateNumber
-                        ]);
-                    }
+                    ));
                 } catch (\Exception $e) {
-                    Log::error('Failed to send certificate email', [
+                    Log::error('Failed to queue certificate email', [
                         'recipient' => $recipient['email'],
                         'error' => $e->getMessage()
                     ]);
