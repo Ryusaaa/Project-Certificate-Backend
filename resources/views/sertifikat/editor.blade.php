@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Editor Sertifikat</title>
-    <!-- Custom Fonts -->
     <link href="{{ asset('css/all-fonts.css') }}" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
     /* Font face declarations for custom fonts */
@@ -769,7 +767,6 @@
 
                         <div class="section-title">Pengaturan Template</div>
 
-            <!-- Template Preview Form -->
             <div class="form-group">
                 <label>Nama Peserta (Preview)</label>
                 <input type="text" id="previewName" value="Nama Peserta" class="form-control">
@@ -985,7 +982,7 @@
             <div id="qrcodeOptions" style="display: none;">
                 <div class="form-group">
                     <label for="qrcodeSize">Ukuran QR Code (px)</label>
-                    <input type="number" id="qrcodeSize" value="100" min="50" max="300">
+                    <input type="number" id="qrcodeSize" value="100" min="50" max="300" oninput="validateQRSize(this)">
                 </div>
             </div>
 
@@ -1041,5 +1038,13 @@
     <script src="{{ asset('js/element-handler.js') }}"></script>
     <script src="{{ asset('js/drag-handler.js') }}"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <script>
+    function validateQRSize(input) {
+        let value = parseInt(input.value);
+        if (value < 50) input.value = 50;
+        if (value > 300) input.value = 300;
+    }
+    </script>
 </body>
 </html>

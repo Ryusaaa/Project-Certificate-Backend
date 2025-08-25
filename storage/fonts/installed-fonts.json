@@ -31,12 +31,12 @@
         "italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/playfair_display_italic_d467bbb6b9692d832f64d28fa17866cf"
     },
     "poppins": {
-        "normal": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_normal_5e882467ad8772e64689184bdb891eaa",
+        "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_normal_5e882467ad8772e64689184bdb891eaa",
         "500": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_cc59382aa55ed4c4f173dfc4fc24be81",
         "500_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_italic_d5b8bf10cc9b5ce7db91de4bb4470011",
-        "600": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_f8f1acc4953dfb03f114a9ad8b3b0517",
+        "600": "poppins_600_f8f1acc4953dfb03f114a9ad8b3b0517",
         "600_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_italic_445fc62bdcf0fba84b54a06acec0a856",
-        "bold": "poppins_bold_4f0fbb182eb5eb68b2ece4ffed969ed1",
+        "bold": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_4f0fbb182eb5eb68b2ece4ffed969ed1",
         "bold_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_italic_6008366665026896ac834a5d1145fc7c",
         "italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_italic_6de0172381f6af71a115ab3443cc83d8"
     },
@@ -47,9 +47,9 @@
         "normal": "allura_normal_7646c2d591d29bc82bff0da2ee848a33"
     },
     "anonymous pro": {
-        "normal": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/anonymous_pro_normal_6e4dc514a41e4c8125d5ba9cf1ba08e1",
+        "normal": "anonymous_pro_normal_8c95e7bdca7d0d3c211ca75e39bf1033",
         "bold": "C:\\Vy Project\\Diantara\\sertifikasi-online-diantara-backend\\storage\\fonts\/anonymous_pro_bold_bfd23a62b6985894ac53aa9eef3bfce3",
-        "bold_italic": "anonymous_pro_bold_italic_55c4e6a15085639ad510a94239ba2d27"
+        "bold_italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/anonymous_pro_bold_italic_55c4e6a15085639ad510a94239ba2d27"
     },
     "anton": {
         "normal": "anton_normal_aaccd0e30a835a0dc72fa9fa049a6fc0"
@@ -118,7 +118,8 @@
         "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_normal_d196b4155228343ce6584658ed0d72f0",
         "italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_italic_f3cc90836e2c7ebf5d085fc1c4cd0215",
         "bold": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_bold_7fb470f35eaae25719ba6418df531881",
-        "bold_italic": "montserrat_bold_italic_accdd10c238c46fdc950356d0c1c0bdd"
+        "bold_italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/montserrat_bold_italic_accdd10c238c46fdc950356d0c1c0bdd",
+        "600": "montserrat_600_da76f05f8eae6cfe610b5528caf415ec"
     },
     "railey": {
         "normal": "railey_normal_748f6229a559fd34b20ef06a28d4ddbe"
@@ -238,5 +239,24 @@
     },
     "breathing-breathing-personal-use-only": {
         "normal": "breathing_breathing_personal_use_only_normal_d975a6a0330486be658cfdafb291fe38"
+    },
+    "oswald": {
+        "600": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/oswald_600_4477444c47385abeb0dc6df38210dfb3",
+        "normal": "oswald_normal_21deae8f7e71528a39ac3145d665c410"
+    },
+    "oswald-oswald-semibold": {
+        "600": "oswald_oswald_semibold_600_4477444c47385abeb0dc6df38210dfb3"
+    },
+    "montserrat-montserrat-semibold": {
+        "600": "montserrat_montserrat_semibold_600_da76f05f8eae6cfe610b5528caf415ec"
+    },
+    "inter-inter_18pt-semibold": {
+        "600": "inter_inter_18pt_semibold_600_9aa8a5e22fae2754d1f14feaf57e304d"
+    },
+    "poppins-poppins-semibold": {
+        "600": "poppins_poppins_semibold_600_f8f1acc4953dfb03f114a9ad8b3b0517"
+    },
+    "dm sans": {
+        "500": "dm_sans_500_c020584c5d709c089f750fe2eea78121"
     }
 }

@@ -20,7 +20,6 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SertifikatPesertaController extends Controller
 {
-
     private function getAllFonts()
     {
         $fontsDir = public_path('fonts');
@@ -51,11 +50,74 @@ class SertifikatPesertaController extends Controller
     private $pdfWidth = 842;    // A4 Landscape width
     private $pdfHeight = 595;   // A4 Landscape height
 
+    private function processElements($elements, $replacements, $scale = 1)
+    {
+        if (!is_array($elements)) {
+            return [];
+        }
+        $scaleFactor = 96 / 72; // ≈1.333 untuk kompensasi px ke pt
+        $previewWidth = 842; // A4 Landscape width in px
+        $previewHeight = 595; // A4 Landscape height in px
+        return array_map(function($element) use ($replacements, $scale, $previewWidth, $previewHeight, $scaleFactor) {
+            $element = json_decode(json_encode($element), true);
+            // Ensure dimensions
+            $element['x'] = isset($element['x']) ? floatval($element['x']) : 0;
+            $element['y'] = isset($element['y']) ? floatval($element['y']) : 0;
+            $element['width'] = isset($element['width']) ? floatval($element['width']) : 100; // Default size
+            $element['height'] = isset($element['height']) ? floatval($element['height']) : 100;
+            // Calculate relative positions and apply scale factor
+            $element['x'] = ($element['x'] / $previewWidth) * $this->pdfWidth * $scaleFactor;
+            $element['y'] = ($element['y'] / $previewHeight) * $this->pdfHeight * $scaleFactor;
+            $element['width'] = ($element['width'] / $previewWidth) * $this->pdfWidth * $scaleFactor;
+            $element['height'] = ($element['height'] / $previewHeight) * $this->pdfHeight * $scaleFactor;
+            // Process text elements
+            if ($element['type'] === 'text') {
+                $element['fontSize'] = isset($element['fontSize']) ? floatval($element['fontSize']) * $scaleFactor : 16 * $scaleFactor;
+                if (isset($element['text'])) {
+                    $originalText = $element['text'];
+                    foreach ($replacements as $key => $value) {
+                        if (strpos($originalText, $key) !== false) {
+                            $element['text'] = str_replace($key, $value, $originalText);
+                        }
+                    }
+                }
+            }
+            // Process image elements
+            if ($element['type'] === 'image') {
+                $element['width'] = max(10, $element['width']); // Minimal size
+                $element['height'] = max(10, $element['height']);
+                if (isset($element['image_url']) && !empty($element['image_url'])) {
+                    // Ensure image fits container
+                    $element['src'] = $element['image_url'];
+                }
+            }
+            // Process QR code elements
+            if ($element['type'] === 'qrcode') {
+                $certificateNumber = $element['content'] ?? $replacements['{NOMOR}'] ?? '';
+                if ($certificateNumber) {
+                    $qrCodeContent = env('FRONTEND_URL') . '/sertifikat-templates/verify/' . $certificateNumber;
+                    $qrSize = min($element['width'], $element['height']) / $scaleFactor; // Convert back to desired pt
+                    $qrCode = QrCode::format('png')
+                        ->size(max(800, intval($qrSize * 6))) // Tingkatkan ke 6 untuk kualitas maksimal
+                        ->margin(0)
+                        ->errorCorrection('H')
+                        ->backgroundColor(255, 255, 255, 0)
+                        ->color(0, 0, 0)
+                        ->generate($qrCodeContent);
+                    $element['qrcode'] = 'data:image/png;base64,' . base64_encode($qrCode);
+                    $element['width'] = $qrSize * $scaleFactor; // Adjust back to scaled size
+                    $element['height'] = $qrSize * $scaleFactor;
+                    $element['x'] = max(0, min($element['x'], $this->pdfWidth * $scaleFactor - $element['width']));
+                    $element['y'] = max(0, min($element['y'], $this->pdfHeight * $scaleFactor - $element['height']));
+                }
+            }
+            return $element;
+        }, $elements);
+    }
 
     public function previewPDF(Request $request, $id)
     {
         try {
-            // Validate request
             $validated = $request->validate([
                 'recipient_name' => 'required|string',
                 'certificate_number' => 'required|string',
@@ -63,105 +125,34 @@ class SertifikatPesertaController extends Controller
                 'merchant_id' => 'required|exists:merchants,id',
                 'instruktur' => 'nullable|string'
             ]);
-
-            // Get template
             $template = Sertifikat::find($id);
             if (!$template) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Template sertifikat tidak ditemukan'
-                ], 404);
+                return response()->json(['status' => 'error', 'message' => 'Template sertifikat tidak ditemukan'], 404);
             }
-
-            // Format date
             setlocale(LC_TIME, 'id_ID');
             Carbon::setLocale('id');
             $dateText = Carbon::parse($validated['date'])->translatedFormat('d F Y');
-
-            // Get QR code SVG
-            $qrCodeSvg = $this->getQRCodeFromCertificate($validated['certificate_number']);
-            Log::info('QR code SVG retrieved:', [
-                'has_content' => !empty($qrCodeSvg),
-                'content_length' => strlen($qrCodeSvg ?? '')
-            ]);
-
-            // Get template elements and add QR code element
             $templateElements = is_array($template->elements) ? $template->elements : [];
-            
-            // Remove any existing QR code elements
-            $templateElements = array_filter($templateElements, function($el) {
-                return $el['type'] !== 'qrcode';
-            });
-            
-            // Add new QR code element
-            $qrCode = $this->getQRCodeFromCertificate($validated['certificate_number']);
-            $templateElements[] = [
-                'type' => 'qrcode',
-                'x' => 7,
-                'y' => 23,
-                'width' => 100,
-                'height' => 100,
-                'content' => $validated['certificate_number'],
-                'qrcode' => $qrCode,
-                'placeholderType' => 'qrcode'
-            ];
-            
-            // Process template elements
-            $elements = $this->prepareElements($templateElements, [
+            $replacements = [
                 '{NAMA}' => $validated['recipient_name'],
                 '{NOMOR}' => $validated['certificate_number'],
                 '{TANGGAL}' => $dateText,
-                '{INSTRUKTUR}' => $validated['instruktur'] ?? ''  // Menggunakan instruktur dari request
-            ]);
-
-            // Prepare PDF data
+                '{INSTRUKTUR}' => $validated['instruktur'] ?? ''
+            ];
+            $elements = $this->processElements($templateElements, $replacements, 1);
             $data = [
                 'template' => $template,
                 'elements' => $elements,
                 'background_image' => Storage::disk('public')->path($template->background_image),
                 'pageWidth' => $this->pdfWidth,
-                'pageHeight' => $this->pdfHeight
+                'pageHeight' => $this->pdfHeight,
+                'replacements' => $replacements // Tambah untuk view
             ];
-
-            // Generate PDF
-            $pdf = PDF::loadView('sertifikat.template', $data)
-                ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
-
-            // Generate temporary filename for preview
-            $filename = sprintf(
-                'preview_sertifikat_%s_%s_%s.pdf',
-                Str::slug($validated['recipient_name']),
-                Str::slug($validated['certificate_number']),
-                now()->format('Ymd_His')
-            );
-
-            // Save to temporary storage
-            $pdfPath = 'certificates/previews/' . $filename;
-            Storage::disk('public')->put($pdfPath, $pdf->output());
-
-            // Return preview URL that will expire
-            $previewUrl = '/storage/' . $pdfPath;
-
-            // Schedule file deletion after 1 hour
-            dispatch(function () use ($pdfPath) {
-                Storage::disk('public')->delete($pdfPath);
-            })->delay(now()->addHour());
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Preview berhasil dibuat',
-                'data' => [
-                    'preview_url' => $previewUrl,
-                    'expires_in' => '1 hour'
-                ]
-            ]);
-
+            $pdf = Pdf::loadView('pdf.template', $data);
+            return $pdf->stream('sertifikat.pdf');
         } catch (\Exception $e) {
-            Log::error('Error generating preview PDF: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            Log::error('Error generating PDF: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -191,34 +182,27 @@ class SertifikatPesertaController extends Controller
             Carbon::setLocale('id');
             $dateText = Carbon::parse($validated['date'])->translatedFormat('d F Y');
             
-            // Process template elements
+            // Get and validate template elements
             $templateElements = is_array($template->elements) ? $template->elements : [];
             
-            // Remove any existing QR code elements
-            $templateElements = array_filter($templateElements, function($el) {
-                return $el['type'] !== 'qrcode';
-            });
-            
-            // Add new QR code element
-            $qrCode = $this->getQRCodeFromCertificate($validated['certificate_number']);
-            $templateElements[] = [
-                'type' => 'qrcode',
-                'x' => 7,
-                'y' => 23,
-                'width' => 100,
-                'height' => 100,
-                'content' => $validated['certificate_number'],
-                'qrcode' => $qrCode,
-                'placeholderType' => 'qrcode'
-            ];
-            
-            // Process template elements with replacements
-            $elements = $this->prepareElements($templateElements, [
+            // Process elements with replacements
+            $replacements = [
                 '{NAMA}' => $validated['recipient_name'],
                 '{NOMOR}' => $validated['certificate_number'],
                 '{TANGGAL}' => $dateText,
                 '{INSTRUKTUR}' => $validated['instruktur']
-            ]);
+            ];
+            
+            // Process elements using 1:1 scale since we're using relative positioning
+            $elements = $this->processElements($templateElements, $replacements, 1);
+            // Process template elements
+            $replacements = [
+                '{NAMA}' => $validated['recipient_name'],
+                '{NOMOR}' => $validated['certificate_number'],
+                '{TANGGAL}' => $dateText,
+                '{INSTRUKTUR}' => $validated['instruktur']
+            ];
+            $elements = $this->processElements($templateElements, $replacements);
 
             // Prepare PDF data
             $data = [
@@ -251,46 +235,49 @@ class SertifikatPesertaController extends Controller
         }
     }
 
+    private function generateQRCode($text) {
+        return QrCode::format('png')
+            ->size(400) // Ukuran besar untuk kualitas bagus
+            ->margin(0) // Hapus margin
+            ->errorCorrection('H') // High error correction
+            ->backgroundColor(255, 255, 255) // Background putih
+            ->color(0, 0, 0) // QR hitam
+            ->generate($text);
+    }
+
     private function prepareElements($elements, $replacements)
     {
-        Log::info('Preparing elements with replacements', [
-            'elements_count' => count($elements),
-            'replacements' => array_keys($replacements)
-        ]);
-        
+        if (!is_array($elements)) {
+            return [];
+        }
+
         return array_map(function($element) use ($replacements) {
+            $element = json_decode(json_encode($element), true);
+            
+            if ($element['type'] === 'text') {
+                $element['text'] = str_replace(array_keys($replacements), array_values($replacements), $element['text']);
+            }
+
             if ($element['type'] === 'qrcode') {
-                Log::info('Processing QR code element', ['element' => $element]);
-                
-                // First try to get certificate number from content
-                $certificateNumber = null;
-                if (!empty($element['content'])) {
-                    $certificateNumber = $element['content'];
-                } elseif (isset($replacements['{NOMOR}'])) {
-                    $certificateNumber = $replacements['{NOMOR}'];
-                }
-                
-                // Generate QR code if we have a certificate number
+                $certificateNumber = $replacements['{NOMOR}'] ?? '';
                 if ($certificateNumber) {
-                    $element['qrcode'] = $this->getQRCodeFromCertificate($certificateNumber);
-                    Log::info('Generated QR code for certificate number', [
-                        'certificate_number' => $certificateNumber,
-                        'has_qr' => !empty($element['qrcode'])
-                    ]);
-                }
-                
-                Log::debug('QR code in element', [
-                    'has_content' => !empty($element['qrcode']),
-                    'content_length' => strlen($element['qrcode'] ?? ''),
-                    'certificate_number' => $certificateNumber,
-                    'position' => isset($element['x']) && isset($element['y']) ? $element['x'] . 'pt, ' . $element['y'] . 'pt' : 'unknown'
-                ]);
-            }
-            elseif (isset($element['placeholderType']) && $element['placeholderType'] !== 'custom') {
-                if (isset($replacements[$element['text']])) {
-                    $element['text'] = $replacements[$element['text']];
+                    $qrCodeContent = env('FRONTEND_URL') . '/sertifikat-templates/verify/' . $certificateNumber;
+                    $qrCode = QrCode::format('png')
+                        ->size(500)
+                        ->margin(0)
+                        ->errorCorrection('H')
+                        ->generate($qrCodeContent);
+                    $element['qrcode'] = 'data:image/png;base64,' . base64_encode($qrCode);
                 }
             }
+
+            if ($element['type'] === 'image' && !empty($element['imageUrl'])) {
+                 $path = str_replace(Storage::url(''), '', $element['imageUrl']);
+                 if(Storage::disk('public')->exists($path)){
+                    $element['image_path'] = $path;
+                 }
+            }
+
             return $element;
         }, $elements);
     }
@@ -299,103 +286,29 @@ class SertifikatPesertaController extends Controller
     {
         try {
             if (empty($certificateNumber)) {
-                Log::warning('Empty certificate number provided');
                 return '';
             }
 
-            Log::info('Starting QR code generation for certificate number: ' . $certificateNumber);
+            // Generate QR code URL
+            $qrCodeContent = env('FRONTEND_URL') . '/sertifikat-templates/verify/' . $certificateNumber;
             
-            // Debug: Output detailed info about the search
-            Log::info('Certificate search details:', [
-                'searched_number' => $certificateNumber,
-                'length' => strlen($certificateNumber),
-                'raw_bytes' => bin2hex($certificateNumber),
-                'special_chars' => preg_replace('/[^\/\-_]/', '', $certificateNumber)
-            ]);
-            
-            // Try exact match first (PostgreSQL)
-            $certificateDownload = CertificateDownload::where('certificate_number', $certificateNumber)->first();
-            
-            // If not found, try with cleaned string (remove any invisible characters)
-            if (!$certificateDownload) {
-                Log::info('Trying with cleaned string...');
-                $cleanNumber = preg_replace('/[\x00-\x1F\x7F\xA0]/u', '', $certificateNumber);
-                $certificateDownload = CertificateDownload::where('certificate_number', $cleanNumber)->first();
-            }
-            
-            // If still not found, try case-insensitive match (PostgreSQL)
-            if (!$certificateDownload) {
-                Log::info('Trying case-insensitive match...');
-                $certificateDownload = CertificateDownload::whereRaw('certificate_number ILIKE ?', [$certificateNumber])->first();
-            }
-            
-            // If still not found, try with trimmed values
-            if (!$certificateDownload) {
-                Log::info('Trying with trimmed values...');
-                $trimmedNumber = trim($certificateNumber);
-                $certificateDownload = CertificateDownload::whereRaw('TRIM(certificate_number) = ?', [$trimmedNumber])->first();
-            }
-
-            if (!$certificateDownload) {
-                Log::error('Certificate download not found for number: ' . $certificateNumber);
-                return '';
-            }
-            
-            Log::info('Found CertificateDownload:', [
-                'id' => $certificateDownload->id,
-                'token' => $certificateDownload->token,
-                'certificate_number' => $certificateDownload->certificate_number,
-                'search_term' => $certificateNumber
-            ]);
-
-            // Check if QR code already exists
-            $qrCodeFileName = 'qrcodes/' . $certificateDownload->token . '.png';
-            if (Storage::disk('public')->exists($qrCodeFileName)) {
-                Log::info('Found existing QR code file: ' . $qrCodeFileName);
-                $pngData = Storage::disk('public')->get($qrCodeFileName);
-                return 'data:image/png;base64,' . base64_encode($pngData);
-            }
-
-            // Generate new QR code
-            Log::info('Generating new QR code');
-            $qrCodeContent = env('FRONTEND_URL') . '/sertifikat-templates/download/' . $certificateDownload->token;
-            
-            // Generate QR code
+            // Generate QR code with high quality settings
             $qrCode = QrCode::format('png')
-                ->size(400)
-                ->margin(1)
-                ->errorCorrection('H')
+                ->size(500) 
+                ->margin(0) // No margin
+                ->errorCorrection('H') 
+                ->backgroundColor(255, 255, 255)
                 ->color(0, 0, 0)
-                ->backgroundColor(255, 255, 255);
+                ->generate($qrCodeContent);
 
-            // Generate PNG data
-            $pngData = $qrCode->generate($qrCodeContent);
-            if (empty($pngData)) {
-                throw new \Exception("Failed to generate QR code image");
-            }
-
-            // Save the QR code
-            Storage::disk('public')->makeDirectory('qrcodes');
-            Storage::disk('public')->put($qrCodeFileName, $pngData);
-
-            // Update UserCertificate if exists
-            $userCertificate = UserCertificate::where('certificate_download_id', $certificateDownload->id)->first();
-            if ($userCertificate) {
-                $userCertificate->update(['qrcode_path' => $qrCodeFileName]);
-            }
-
-            // Return the QR code as base64 data URI
-            $qrCodeImage = 'data:image/png;base64,' . base64_encode($pngData);
-            Log::info('Successfully generated and saved QR code');
-            return $qrCodeImage;
-
+            // Return as base64 data URI
+            return 'data:image/png;base64,' . base64_encode($qrCode);
         } catch (\Exception $e) {
             Log::error('Error generating QR code: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
             return '';
         }
     }
-            
 
     private function generateCertificateNumber($template, $format = null)
     {
@@ -555,183 +468,97 @@ class SertifikatPesertaController extends Controller
     public function generateBulkPDF(Request $request, $id)
     {
         try {
-            // Validate request with instruktur field
             $validated = $request->validate([
                 'recipients' => 'required|array|min:1',
                 'recipients.*.recipient_name' => 'required|string',
                 'recipients.*.date' => 'required|date',
                 'recipients.*.email' => 'required|email',
                 'certificate_number_format' => 'nullable|string',
-                'merchant_id' => 'required',
+                'merchant_id' => 'required|exists:merchants,id',
                 'data_activity_id' => 'required|exists:data_activity,id',
                 'instruktur' => 'required|string',
             ]);
-            
-            // Get template
-            $template = Sertifikat::find($id);
-            if (!$template) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Template sertifikat tidak ditemukan'
-                ], 404);
-            }
-
+    
+            $template = Sertifikat::findOrFail($id);
             $generatedPDFs = [];
-
+    
             foreach ($validated['recipients'] as $recipient) {
-
                 setlocale(LC_TIME, 'id_ID');
                 Carbon::setLocale('id');
                 $dateText = Carbon::parse($recipient['date'])->translatedFormat('d F Y');
                 
-                // Process template elements with replacements
-                $templateElements = is_array($template->elements) ? $template->elements : [];
-                
-                // Remove any existing QR code elements
-                $templateElements = array_filter($templateElements, function($el) {
-                    return $el['type'] !== 'qrcode';
-                });
-                
-                // Generate QR code for this certificate
                 $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format'] ?? null);
-                $qrCode = $this->getQRCodeFromCertificate($certificateNumber);
-                
-                // Add QR code element
-                $templateElements[] = [
-                    'type' => 'qrcode',
-                    'x' => 7,
-                    'y' => 23,
-                    'width' => 100,
-                    'height' => 100,
-                    'content' => $certificateNumber,
-                    'qrcode' => $qrCode,
-                    'placeholderType' => 'qrcode'
-                ];
-                
-                // Process elements with replacements including instruktur
-                $elements = $this->prepareElements($templateElements, [
+    
+                $replacements = [
                     '{NAMA}' => $recipient['recipient_name'],
                     '{NOMOR}' => $certificateNumber,
                     '{TANGGAL}' => $dateText,
                     '{INSTRUKTUR}' => $validated['instruktur']
-                ]);
-
-                // Generate unique filename and token for each recipient
+                ];
+    
+                $elements = $this->prepareElements($template->elements, $replacements);
+    
                 $filename = sprintf(
-                    'sertifikat_%s_%s_%s.pdf',
+                    'sertifikat_%s_%s.pdf',
                     Str::slug($recipient['recipient_name']),
-                    Str::slug($certificateNumber),
-                    now()->format('Ymd_His')
+                    now()->format('YmdHis')
                 );
                 
-                $downloadToken = Str::random(12);
-
-                // Prepare PDF data with processed elements
+                $downloadToken = Str::random(40);
+    
                 $data = [
-                    'template' => $template,
                     'elements' => $elements,
                     'background_image' => Storage::disk('public')->path($template->background_image),
-                    'pageWidth' => $this->pdfWidth,
-                    'pageHeight' => $this->pdfHeight
                 ];
-
-                // Generate PDF
-                $pdf = PDF::loadView('sertifikat.template', $data)
-                    ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
-
-                // Save PDF to storage
-                Storage::disk('public')->makeDirectory('certificates/generated');
+    
+                $pdf = PDF::loadView('sertifikat.template', $data)->setPaper('a4', 'landscape');
+                
                 Storage::disk('public')->put('certificates/generated/' . $filename, $pdf->output());
-
-                // Create download record
+    
                 $user = User::where('email', $recipient['email'])->first();
-                $download = $template->createDownload([
+    
+                $download = CertificateDownload::create([
+                    'sertifikat_id' => $template->id,
                     'token' => $downloadToken,
                     'filename' => $filename,
                     'recipient_name' => $recipient['recipient_name'],
                     'certificate_number' => $certificateNumber,
-                    'user_id' => $user ? $user->id : null,
+                    'user_id' => $user->id ?? null,
                     'expires_at' => now()->addDays(30),
-                    'merchant_id' => $validated['merchant_id'], // pastikan ini ada
-                    'data_activity_id' => $validated['data_activity_id'], // pastikan ini ada
-                    'sertifikat_id' => $id
+                    'merchant_id' => $validated['merchant_id'],
+                    'data_activity_id' => $validated['data_activity_id'],
                 ]);
 
-                // Debug: Log created download
-                    Log::info('Certificate Download Created:', [
-                    'id' => $download->id,
-                    'merchant_id' => $download->merchant_id,
-                    'data_activity_id' => $download->data_activity_id
-                ]);
-
-                // Create UserCertificate if user exists
-                $userCertificate = null;
                 if ($user) {
-                    Log::info('Creating UserCertificate for user:', [
+                    UserCertificate::create([
                         'user_id' => $user->id,
-                        'download_id' => $download->id,
-                        'merchant_id' => $validated['merchant_id'],
-                        'data_activity_id' => $validated['data_activity_id']
-                    ]);
-
-                    $userCertificate = UserCertificate::create([
-                        'user_id' => $user->id,
-                        'data_activity_id' => $validated['data_activity_id'], // Use validated data directly
+                        'data_activity_id' => $validated['data_activity_id'],
                         'certificate_download_id' => $download->id,
                         'assigned_at' => now(),
                         'status' => 'active',
-                        'merchant_id' => $validated['merchant_id'], // Use validated data directly
-                        'qrcode_path' => 'qrcodes/' . $downloadToken . '.png'
-                    ]);
-
-                    if (!$userCertificate) {
-                        Log::error('Failed to create UserCertificate');
-                    } else {
-                        Log::info('UserCertificate created successfully:', $userCertificate->toArray());
-                    }
-                } else {
-                    Log::warning('User not found for email: ' . $recipient['email']);
-                }
-
-
-                // Kirim email via queue menggunakan Laravel Mailable
-                try {
-                    Mail::to($recipient['email'])->queue(new \App\Mail\CertificateGenerated(
-                        $recipient['recipient_name'],
-                        $certificateNumber,
-                        url('/sertifikat-templates/download/' . $downloadToken),
-                        $pdf->output()
-                    ));
-                } catch (\Exception $e) {
-                    Log::error('Failed to queue certificate email', [
-                        'recipient' => $recipient['email'],
-                        'error' => $e->getMessage()
+                        'merchant_id' => $validated['merchant_id'],
                     ]);
                 }
-
+    
+                // Email sending logic
+                // ...
+    
                 $generatedPDFs[] = [
                     'recipient_name' => $recipient['recipient_name'],
                     'certificate_number' => $certificateNumber,
-                    'view_url' => '/storage/certificates/generated/' . $filename,
-                    'download_url' => '/sertifikat-templates/download/' . $downloadToken,
-                    'download_token' => $downloadToken,
-                    'email_sent' => true
+                    'download_url' => url('/sertifikat-templates/download/' . $downloadToken),
                 ];
             }
-
+    
             return response()->json([
                 'status' => 'success',
-                'message' => count($generatedPDFs) . ' sertifikat berhasil dibuat',
+                'message' => count($generatedPDFs) . ' sertifikat berhasil dibuat.',
                 'data' => $generatedPDFs
             ]);
-
+    
         } catch (\Exception $e) {
             Log::error('Error generating bulk PDFs: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
