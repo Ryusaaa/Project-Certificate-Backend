@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\Merchant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -52,6 +53,7 @@ class UserApiController extends Controller
                 'email' => $item->email,
                 'role_id' => $item->role_id,
                 'role_name' => $item->role->name ?? null,
+                'merchant_id' => $item->merchant_id,
             ];
         });
 
@@ -76,20 +78,27 @@ class UserApiController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:admins,email',
                 'password' => 'required|string|min:8',
+                'merchant_id' => 'required|integer'
             ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Validation failed', 'error' => $e->getMessage()], 422);
         }
 
-        // Get merchant_id dari admin yang sedang login
-        $merchant_id = auth('sanctum')->user()->merchant_id ?? 1; 
+        $merchant = Merchant::find($request->merchant_id);
+        if (!$merchant) {
+            $merchant = Merchant::create([
+                'id' => $request->merchant_id,
+                'name' => 'Merchant ' . $request->merchant_id,
+            ]);
+        }
+        
 
         $admin = Admin::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role_id' => '1',
-            'merchant_id' => $merchant_id
+            'merchant_id' => $merchant->id,
         ]);
 
         return response()->json([
