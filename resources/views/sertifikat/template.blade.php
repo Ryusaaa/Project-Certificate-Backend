@@ -485,18 +485,38 @@
         }
         .element-qrcode {
             position: absolute !important;
-            z-index: 100 !important;
-            background: white !important;
-            overflow: hidden;
+            z-index: 9999 !important; /* ensure top-most */
+            background: transparent !important; /* keep transparent so PNG background shows through */
+            border-radius: 0 !important;
+            border: none !important;
+            overflow: visible !important; /* allow full QR rendering */
+            box-shadow: none !important;
+            box-sizing: border-box !important;
+            display: block !important;
+            transform-origin: center center !important;
+            padding: 0 !important;
+        }
+        /* q-inner will exactly match element box and provide inner padding if needed */
+        .element-qrcode .q-inner {
+            width: 100% !important;
+            height: 100% !important;
+            box-sizing: border-box !important;
+            padding: 6px !important; /* inner white inset so QR doesn't touch edges */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         .element-qrcode img {
             width: 100% !important;
             height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
             display: block !important;
             object-fit: contain !important;
             image-rendering: pixelated !important; /* For sharp QR codes */
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            margin: 0 !important;
         }
         @media print {
             .element-qrcode {
@@ -522,52 +542,184 @@
         @endif
 
         @if(isset($elements) && is_array($elements))
+            {{-- Render non-QR elements first so QR elements can be placed above them --}}
             @foreach($elements as $element)
-                @if($element['type'] === 'qrcode')
-                    @php $qrcodeSrc = $element['qrcode'] ?? ''; @endphp
-                    <div class="element element-qrcode" style="left: {{ $element['x'] }}px; top: {{ $element['y'] }}px; width: {{ $element['width'] }}px; height: {{ $element['height'] }}px;">
-                        @if($qrcodeSrc)
-                            <img src="{{ $qrcodeSrc }}" alt="QR Code">
-                        @else
-                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #ccc;">QR not found</div>
-                        @endif
-                    </div>
-                @elseif($element['type'] === 'text')
+                @if($element['type'] !== 'qrcode')
                     @php
-                        $fontFamily = isset($element['font']['family']) ? "'{$element['font']['family']}', Arial, sans-serif" : 'Arial, sans-serif';
-                        $fontWeight = isset($element['font']['weight']) ? $element['font']['weight'] : '400';
-                        $fontStyle  = isset($element['font']['style']) ? $element['font']['style'] : 'normal';
-                        $fontSize   = isset($element['fontSize']) ? $element['fontSize'] : 16;
-                        $textAlign  = isset($element['textAlign']) ? $element['textAlign'] : 'left';
-                        $color      = isset($element['color']) ? $element['color'] : '#000000';
-                        $text       = isset($element['text']) ? $element['text'] : '';
-                        $x = $element['x'];
-                        $y = $element['y'];
-                        
-                        $transformFns = [];
-                        if ($textAlign === 'center') $transformFns[] = 'translateX(-50%)';
-                        elseif ($textAlign === 'right') $transformFns[] = 'translateX(-100%)';
-                        
-                        $transformCss = count($transformFns) > 0 ? 'transform: ' . implode(' ', $transformFns) . ';' : '';
+                        $type = $element['type'];
+                        $x = $element['x'] ?? 0;
+                        $y = $element['y'] ?? 0;
+                        $w = $element['width'] ?? null;
+                        $h = $element['height'] ?? null;
 
-                        $style = "position: absolute; left: {$x}px; top: {$y}px; font-family: {$fontFamily}; font-size: {$fontSize}px; font-weight: {$fontWeight}; font-style: {$fontStyle}; text-align: {$textAlign}; color: {$color}; {$transformCss}";
+                        // rotation (degrees) and scale support
+                        $rotate = isset($element['rotate']) ? (float) $element['rotate'] : 0;
+                        $scaleX = isset($element['scaleX']) ? (float) $element['scaleX'] : 1;
+                        $scaleY = isset($element['scaleY']) ? (float) $element['scaleY'] : 1;
+                        $transformParts = [];
+                        if ($rotate !== 0) $transformParts[] = "rotate({$rotate}deg)";
+                        if ($scaleX !== 1 || $scaleY !== 1) $transformParts[] = "scale({$scaleX}, {$scaleY})";
+
+                        // horizontal alignment transforms for text
+                        $textAlign = $element['textAlign'] ?? null;
+                        if ($textAlign === 'center') $transformParts[] = 'translateX(-50%)';
+                        elseif ($textAlign === 'right') $transformParts[] = 'translateX(-100%)';
+
+                        $transformCss = count($transformParts) ? 'transform: ' . implode(' ', $transformParts) . ';' : '';
                     @endphp
-                    <div class="element element-text" style="{!! $style !!}">{!! nl2br(e($text)) !!}</div>
-                @elseif($element['type'] === 'image')
+
+                    @if($type === 'text')
+                        @php
+                            $fontFamily = isset($element['font']['family']) ? "'{$element['font']['family']}', Arial, sans-serif" : 'Arial, sans-serif';
+                            $fontWeight = isset($element['font']['weight']) ? $element['font']['weight'] : '400';
+                            $fontStyle  = isset($element['font']['style']) ? $element['font']['style'] : 'normal';
+                            $fontSize   = isset($element['fontSize']) ? $element['fontSize'] : 16;
+                            $color      = isset($element['color']) ? $element['color'] : '#000000';
+                            $text       = isset($element['text']) ? $element['text'] : '';
+
+                            $style = "position: absolute; left: {$x}px; top: {$y}px; font-family: {$fontFamily}; font-size: {$fontSize}px; font-weight: {$fontWeight}; font-style: {$fontStyle}; text-align: {$textAlign}; color: {$color}; {$transformCss}";
+                        @endphp
+                        <div class="element element-text" style="{!! $style !!}">{!! nl2br(e($text)) !!}</div>
+                    @elseif($type === 'image')
+                        @php
+                            $imageSrc = null;
+                            if (!empty($element['image_path']) && file_exists(storage_path('app/public/' . $element['image_path']))) {
+                                $path = storage_path('app/public/' . $element['image_path']);
+                                $ext = pathinfo($path, PATHINFO_EXTENSION);
+                                $data = base64_encode(file_get_contents($path));
+                                $imageSrc = 'data:image/' . $ext . ';base64,' . $data;
+                            }
+                        @endphp
+                        @if($imageSrc)
+                            @php $style = "left: {$x}px; top: {$y}px;"; $sizeStyle = '';
+                                if ($w) $sizeStyle .= "width: {$w}px;"; if ($h) $sizeStyle .= "height: {$h}px;";
+                            @endphp
+                            <div class="element element-image" style="position: absolute; {!! $style !!} {!! $sizeStyle !!} {!! $transformCss !!}">
+                                <img src="{{ $imageSrc }}" style="width: 100%; height: 100%;">
+                            </div>
+                        @endif
+                    @endif
+                @endif
+            @endforeach
+
+            {{-- helper: convert svg/raw base64 QR to transparent PNG using Imagick if available --}}
+            @php
+                if (!function_exists('qr_to_transparent_png_datauri')) {
+                function qr_to_transparent_png_datauri($data, $targetW = 256, $targetH = 256, $margin = null) {
+                    // Accept data URI or raw svg/base64 or already png datauri
+                    if (!$data) return null;
+                    // If it's already a data URI for PNG, return as-is
+                    if (strpos($data, 'data:image/png') === 0) return $data;
+
+                    // If it's a full data URI for svg or png, extract payload
+                    if (preg_match('#^data:image/[^;]+;base64,(.+)$#', $data, $m)) {
+                        $raw = base64_decode($m[1]);
+                    } else {
+                        // assume raw base64 or raw SVG bytes
+                        // try to base64-decode; if fails, use raw string
+                        $decoded = base64_decode($data, true);
+                        $raw = $decoded === false ? $data : $decoded;
+                    }
+
+                    if (!extension_loaded('imagick')) {
+                        // fallback: if raw already PNG bytes, return data uri
+                        if (strlen($raw) > 8 && substr($raw,0,8) === "\x89PNG\r\n\x1a\n") {
+                            return 'data:image/png;base64,' . base64_encode($raw);
+                        }
+                        // else try to return as svg data uri (dompdf may not support svg well)
+                        return 'data:image/svg+xml;base64,' . base64_encode($raw);
+                    }
+
+                    try {
+                        $im = new Imagick();
+
+                        // Read SVG or PNG
+                        // Ensure we use a density for better rasterization
+                        $im->setBackgroundColor(new ImagickPixel('transparent'));
+                        // set resolution higher for vector sources to get crisp raster
+                        $im->setResolution(300,300);
+
+                        // If SVG, readImageBlob will rasterize; if PNG, it will load
+                        $im->readImageBlob($raw);
+
+                        // flatten with transparent background
+                        $im->setImageAlphaChannel(Imagick::ALPHACHANNEL_SET);
+                        $im->setImageBackgroundColor(new ImagickPixel('transparent'));
+
+                        // compute margin if not provided: 4% of smaller side (smaller margin so QR appears larger)
+                        if ($margin === null) {
+                            $margin = (int) max(3, round(min($targetW, $targetH) * 0.04));
+                        }
+
+                        $innerW = max(1, $targetW - ($margin * 2));
+                        $innerH = max(1, $targetH - ($margin * 2));
+
+                        // Resize preserving aspect to fit inner box
+                        $im->resizeImage($innerW, $innerH, Imagick::FILTER_LANCZOS, 1, true);
+
+                        // Create canvas (targetW x targetH) and composite centered
+                        $canvas = new Imagick();
+                        $canvas->newImage($targetW, $targetH, new ImagickPixel('transparent'));
+                        $canvas->setImageFormat('png32');
+
+                        $x = (int)(($targetW - $im->getImageWidth()) / 2);
+                        $y = (int)(($targetH - $im->getImageHeight()) / 2);
+                        $canvas->compositeImage($im, Imagick::COMPOSITE_DEFAULT, $x, $y);
+
+                        // Ensure solid black foreground by converting to RGB and increasing contrast
+                        $canvas->transformImageColorspace(Imagick::COLORSPACE_RGB);
+                        $canvas->contrastImage(1);
+
+                        $canvas->setImageAlphaChannel(Imagick::ALPHACHANNEL_SET);
+                        $png = $canvas->getImageBlob();
+                        $canvas->clear(); $canvas->destroy(); $im->clear(); $im->destroy();
+
+                        return 'data:image/png;base64,' . base64_encode($png);
+                    } catch (Exception $e) {
+                        // on failure, fallback to original (if base64) or svg datauri
+                        if (strpos($data, 'data:image') === 0) return $data;
+                        return 'data:image/svg+xml;base64,' . base64_encode($raw);
+                    }
+                }
+                }
+            @endphp
+
+            {{-- Render QR elements last so they appear above background/artwork --}}
+            @foreach($elements as $element)
+                @if(isset($element['type']) && $element['type'] === 'qrcode')
                     @php
-                        $imageSrc = null;
-                        if (!empty($element['image_path']) && file_exists(storage_path('app/public/' . $element['image_path']))) {
-                            $path = storage_path('app/public/' . $element['image_path']);
-                            $ext = pathinfo($path, PATHINFO_EXTENSION);
-                            $data = base64_encode(file_get_contents($path));
-                            $imageSrc = 'data:image/' . $ext . ';base64,' . $data;
+                        $qrcodeSrc = $element['qrcode'] ?? ($element['content'] ?? '');
+                        $x = isset($element['x']) ? (int) $element['x'] : 0;
+                        $y = isset($element['y']) ? (int) $element['y'] : 0;
+                        $rawW = isset($element['width']) ? (int) $element['width'] : 0;
+                        $rawH = isset($element['height']) ? (int) $element['height'] : 0;
+                        // respect editor-provided size; enforce minimum (180px) for scan reliability
+                        $minSize = 180;
+                        $w = $rawW > 0 ? max($rawW, $minSize) : $minSize;
+                        $h = $rawH > 0 ? max($rawH, $minSize) : $minSize;
+                        $rotate = isset($element['rotate']) ? (float) $element['rotate'] : 0;
+                        $scaleX = isset($element['scaleX']) ? (float) $element['scaleX'] : 1;
+                        $scaleY = isset($element['scaleY']) ? (float) $element['scaleY'] : 1;
+                        $transformParts = [];
+                        if ($rotate !== 0) $transformParts[] = "rotate({$rotate}deg)";
+                        if ($scaleX !== 1 || $scaleY !== 1) $transformParts[] = "scale({$scaleX}, {$scaleY})";
+                        $transformCss = count($transformParts) ? 'transform: ' . implode(' ', $transformParts) . ';' : '';
+
+                        // process via Imagick helper to produce transparent PNG data URI using editor size
+                        $processedQr = null;
+                        if ($qrcodeSrc) {
+                            $processedQr = qr_to_transparent_png_datauri($qrcodeSrc, $w, $h, null);
+                            Log::debug("Processed QR code for element at ({$x},{$y}) to {$w}x{$h}: " . $processedQr);
                         }
                     @endphp
-                    @if($imageSrc)
-                        <div class="element element-image" style="left: {{ $element['x'] }}px; top: {{ $element['y'] }}px; width: {{ $element['width'] }}px; height: {{ $element['height'] }}px;">
-                            <img src="{{ $imageSrc }}" style="width: 100%; height: 100%;">
-                        </div>
-                    @endif
+
+                    <div class="element element-qrcode" style="left: {{ $x }}px; top: {{ $y }}px; width: {{ $w }}px; height: {{ $h }}px; transform-origin: center center; {!! $transformCss !!}">
+                        @if($processedQr)
+                            <img src="{{ $processedQr }}" alt="QR Code" style="background: transparent; display:block; image-rendering: pixelated; width:100%; height:100%;">
+                        @else
+                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: transparent; color:#999;">QR not found</div>
+                        @endif
+                    </div>
                 @endif
             @endforeach
         @endif
