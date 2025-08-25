@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Encoders\AutoEncoder;
-
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SertifikatTemplateController extends Controller
 {
@@ -217,34 +217,40 @@ class SertifikatTemplateController extends Controller
     public function store(Request $request)
     {
         try {
-            // Ambil merchant_id dari user yang sedang login (misal relasi user->merchant_id)
-            $merchantId = $request->user()->merchant_id ?? 1; // fallback ke 1 jika tidak ada
+            $merchantId = $request->user()->merchant_id ?? 1;
 
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'background_image' => 'required|string',
                 'elements' => 'required|array',
                 'certificate_number_format' => 'nullable|string',
-                // Hapus 'merchant_id' dari validasi request
             ]);
 
-            // Ubah URL gambar menjadi path penyimpanan
             $background_path = str_replace(Storage::url(''), '', $validated['background_image']);
             if (!Storage::disk('public')->exists($background_path)) {
                 return response()->json(['status' => 'error', 'message' => 'Background image not found on storage.'], 404);
             }
 
-            // Create template
             $template = new Sertifikat();
             $template->name = $validated['name'];
             $template->background_image = $background_path;
-            $template->elements = $this->processElements($validated['elements']);
+
+            $processedElements = array_map(function($element) {
+                if ($element['type'] === 'image' && !empty($element['imageUrl'])) {
+                    // Convert full URL to relative storage path
+                    $element['imageUrl'] = str_replace(Storage::url(''), '', $element['imageUrl']);
+                }
+                return $element;
+            }, $validated['elements']);
+
+            $template->elements = $processedElements;
+            
             $template->layout = [
                 'width' => $this->pdfWidth,
                 'height' => $this->pdfHeight,
                 'orientation' => 'landscape'
             ];
-            $template->merchant_id = $merchantId; // Set otomatis dari user
+            $template->merchant_id = $merchantId;
 
             if (!$template->save()) {
                 throw new \Exception('Failed to save template');
@@ -295,7 +301,7 @@ class SertifikatTemplateController extends Controller
                 $validated['background_image'] = str_replace(Storage::url(''), '', $validated['background_image']);
             }
             if (isset($validated['elements'])) {
-                $validated['elements'] = $this->processElements($validated['elements']);
+                $validated['elements'] = $this->processElements($validated['elements'], []);
             }
 
             // Validate certificate number format if provided
@@ -558,258 +564,88 @@ class SertifikatTemplateController extends Controller
     }
 
     /**
-     * Enhanced processElements method with shape support
+     * Process elements with scale compensation for DomPDF
      */
-    private function processElements($elements)
+    private function processElements($elements, $replacements = [], $scale = 1) 
     {
-        return array_map(function ($element) {
-            Log::info('Processing element:', $element);
+        if (!is_array($elements)) {
+            return [];
+        }
 
-            // Calculate scale factor for PDF coordinates
-            $scaleFactor = 1;
+        // Faktor skala untuk mengompensasi konversi px ke pt di DomPDF (1px = 0.75pt, jadi multiply 96/72)
+        $scaleFactor = 96 / 72; // ≈1.333
 
-            // Ensure coordinates are within bounds and properly scaled
-            $element['x'] = max(0, min($element['x'] * $scaleFactor, $this->pdfWidth));
-            $element['y'] = max(0, min($element['y'] * $scaleFactor, $this->pdfHeight));
+        // Preview dimensions (assumed to be the same as PDF for 1:1 scale)
+        $previewWidth = 842;  // A4 Landscape width in px (editor)
+        $previewHeight = 595; // A4 Landscape height in px (editor)
 
-            // Scale size properties if they exist
-            if (isset($element['width'])) {
-                $element['width'] = $element['width'] * $scaleFactor;
-            }
-            if (isset($element['height'])) {
-                $element['height'] = $element['height'] * $scaleFactor;
-            }
+        return array_map(function($element) use ($replacements, $scale, $previewWidth, $previewHeight, $scaleFactor) {
+            // Deep clone element
+            $element = json_decode(json_encode($element), true);
+            
+            // Ensure we have all necessary dimensions
+            $element['x'] = isset($element['x']) ? floatval($element['x']) : 0;
+            $element['y'] = isset($element['y']) ? floatval($element['y']) : 0;
+            $element['width'] = isset($element['width']) ? floatval($element['width']) : 0;
+            $element['height'] = isset($element['height']) ? floatval($element['height']) : 0;
 
-            // Process text elements (existing logic)
+            // Calculate relative positions (proportional)
+            $element['x'] = ($element['x'] / $previewWidth) * $this->pdfWidth;
+            $element['y'] = ($element['y'] / $previewHeight) * $this->pdfHeight;
+            $element['width'] = ($element['width'] / $previewWidth) * $this->pdfWidth;
+            $element['height'] = ($element['height'] / $previewHeight) * $this->pdfHeight;
+
+            // Apply DomPDF scale compensation (buat nilai CSS px lebih besar agar render ke pt benar)
+            $element['x'] *= $scaleFactor;
+            $element['y'] *= $scaleFactor;
+            $element['width'] *= $scaleFactor;
+            $element['height'] *= $scaleFactor;
+
+            // Process font size for text elements (juga apply scale)
             if ($element['type'] === 'text') {
-                if (isset($element['fontSize'])) {
-                    $element['fontSize'] = intval($element['fontSize']);
-                    $element['fontSize'] = max(8, min($element['fontSize'], 72));
-                }
-
-                if (!isset($element['font']) || !is_array($element['font'])) {
-                    $element['font'] = [
-                        'family' => 'Arial',
-                        'weight' => '400',
-                        'style' => 'normal'
-                    ];
-                } else {
-                    $element['font'] = array_merge([
-                        'family' => 'Arial',
-                        'weight' => '400',
-                        'style' => 'normal'
-                    ], $element['font']);
-                }
-
-                $allowedWeights = ['normal', '400', '500', '600', '700', 'bold'];
-                $allowedFonts = [
-                    // System
-                    'Arial',
-                    'Times New Roman',
-                    'Helvetica',
-                    'Georgia',
-                    'Verdana',
-                    'Courier New',
-                    // Sans-Serif
-                    'Inter',
-                    'Poppins',
-                    'Montserrat',
-                    'Open Sans',
-                    'League Spartan',
-                    'DM Sans',
-                    'Oswald',
-                    'Barlow',
-                    // Serif
-                    'Playfair Display',
-                    'Merriweather',
-                    'Libre Baskerville',
-                    'Lora',
-                    'Bree Serif',
-                    'DM Serif Display',
-                    // Decorative
-                    'Alice',
-                    'Allura',
-                    'Great Vibes',
-                    'Dancing Script',
-                    'Brittany',
-                    'Breathing',
-                    'Brighter',
-                    'Bryndan Write',
-                    'Caitlin Angelica',
-                    'Railey',
-                    'More Sugar',
-                    // Display
-                    'Bebas Neue',
-                    'Anton',
-                    'Archivo Black',
-                    'Fredoka One'
-                ];
-
-                // Normalisasi font weight
-                if (!in_array(strval($element['font']['weight']), $allowedWeights)) {
-                    $element['font']['weight'] = '400';
-                }
-
-                // Normalisasi font family
-                if (!in_array($element['font']['family'], $allowedFonts)) {
-                    $element['font']['family'] = 'Arial';
-                }
-
-                // If the editor provided a folder, try to resolve a concrete font file (weightFile)
-                // so saved template will reference the actual font file (including italic variants)
-                try {
-                    $folder = isset($element['font']['folder']) ? $element['font']['folder'] : null;
-                    $requestedFile = isset($element['font']['weightFile']) ? $element['font']['weightFile'] : null;
-                    $styleReq = isset($element['font']['style']) ? $element['font']['style'] : 'normal';
-                    $weightReq = isset($element['font']['cssWeight']) ? $element['font']['cssWeight'] : (isset($element['font']['weight']) ? $element['font']['weight'] : '400');
-
-                    if ($folder) {
-                        $folderPath = public_path('fonts/' . $folder);
-                        $resolved = null;
-
-                        // If requestedFile looks like a filename and exists, keep it
-                        if ($requestedFile && preg_match('/\.(ttf|otf|woff2?|woff)$/i', $requestedFile)) {
-                            $cand = $folderPath . DIRECTORY_SEPARATOR . $requestedFile;
-                            if (file_exists($cand)) {
-                                $resolved = $requestedFile;
-                            }
-                        }
-
-                        if (!$resolved && is_dir($folderPath)) {
-                            $files = array_values(array_filter(scandir($folderPath), function($fn) use ($folderPath) {
-                                if (in_array($fn, ['.', '..'])) return false;
-                                return preg_match('/\.(ttf|otf|woff2?|woff)$/i', $fn) && is_file($folderPath . DIRECTORY_SEPARATOR . $fn);
-                            }));
-
-                            // Prefer italic file when italic requested
-                            if ($styleReq === 'italic') {
-                                foreach ($files as $ff) {
-                                    if (stripos($ff, 'italic') !== false) { $resolved = $ff; break; }
-                                }
-                            }
-
-                            // Match by weight tokens
-                            if (!$resolved) {
-                                foreach ($files as $ff) {
-                                    $low = strtolower($ff);
-                                    if (strpos($low, (string)$weightReq) !== false) { $resolved = $ff; break; }
-                                    if ($weightReq == '400' && (strpos($low, 'regular') !== false || strpos($low, '-regular') !== false)) { $resolved = $ff; break; }
-                                    if ($weightReq == '700' && (strpos($low, 'bold') !== false || strpos($low, '-bold') !== false)) { $resolved = $ff; break; }
-                                    if ($weightReq == '600' && (strpos($low, 'semibold') !== false || strpos($low, 'semi') !== false)) { $resolved = $ff; break; }
-                                }
-                            }
-
-                            // fallback to first
-                            if (!$resolved && count($files) > 0) $resolved = $files[0];
-                        }
-
-                        if ($resolved) {
-                            $element['font']['weightFile'] = $resolved;
-                            // ensure folder is saved as provided (preserve case)
-                            $element['font']['folder'] = $folder;
+                $element['fontSize'] = isset($element['fontSize']) ? floatval($element['fontSize']) * $scaleFactor : 16 * $scaleFactor;
+                if (isset($element['text'])) {
+                    foreach ($replacements as $key => $value) {
+                        if (strpos($element['text'], $key) !== false) {
+                            $element['text'] = str_replace($key, $value, $element['text']);
                         }
                     }
-                } catch (\Exception $e) {
-                    Log::warning('Font resolution failed for element', ['err' => $e->getMessage(), 'element' => $element]);
                 }
             }
 
-            // Process image elements (existing logic)
+            // Process image elements (apply scale to dimensions)
             if ($element['type'] === 'image') {
-                $imageUrl = null;
-                foreach (['imageUrl', 'url', 'image', 'src'] as $field) {
-                    if (!empty($element[$field])) {
-                        $imageUrl = $element[$field];
-                        break;
-                    }
-                }
-
-                if ($imageUrl) {
-                    // If image was sent as a data URL (base64), persist it
-                    if (preg_match('/^data:image\/(png|jpeg|jpg);base64,/', $imageUrl)) {
-                        try {
-                            $imageData = preg_replace('/^data:image\/(png|jpeg|jpg);base64,/', '', $imageUrl);
-                            $imageData = base64_decode($imageData);
-                            $filename = 'certificates/' . time() . '_' . Str::random(10) . '.png';
-                            Storage::disk('public')->put($filename, $imageData);
-                            $url = Storage::url($filename);
-                            $element['image_url'] = $url;
-                            $element['image'] = $url;
-                            $element['image_path'] = $filename;
-                        } catch (\Exception $e) {
-                            Log::warning('Failed to persist base64 image for element', ['err' => $e->getMessage()]);
-                        }
-                    }
-
-                    // If image points to existing storage path, keep reference
-                    elseif (preg_match('#/storage/certificates/([^/]+)$#', $imageUrl, $matches)) {
-                        $imagePath = 'certificates/' . $matches[1];
-
-                        if (Storage::disk('public')->exists($imagePath)) {
-                            $element['image_url'] = $imageUrl;
-                            $element['image'] = $imageUrl;
-                            $element['image_path'] = $imagePath;
-                        }
-                    }
-                }
+                // Sudah ada handling di blade, tapi pastikan dimensions adjusted
+                $element['width'] = max(10, $element['width']); // Minimal size agar tidak hilang
+                $element['height'] = max(10, $element['height']);
             }
 
-            // Process shape elements (NEW)
-            if ($element['type'] === 'shape') {
-                // Ensure shape has required properties
-                $element['shapeType'] = $element['shapeType'] ?? 'rectangle';
-
-                // Validate shape type - now supports all frontend shapes
-                $allowedShapes = [
-                    'rectangle',
-                    'circle',
-                    'triangle',
-                    'star',
-                    'diamond',
-                    'pentagon',
-                    'hexagon',
-                    'line',
-                    'arrow',
-                    'heart',
-                    'cross'
-                ];
-                if (!in_array($element['shapeType'], $allowedShapes)) {
-                    $element['shapeType'] = 'rectangle';
-                }
-
-                // Ensure style properties exist
-                if (!isset($element['style']) || !is_array($element['style'])) {
-                    $element['style'] = [];
-                }
-
-                $element['style'] = array_merge([
-                    'color' => '#000000',
-                    'fillColor' => 'transparent',
-                    'strokeWidth' => 1,
-                    'opacity' => 1,
-                    'borderRadius' => 0
-                ], $element['style']);
-
-                // Validate style values
-                $element['style']['strokeWidth'] = max(0, floatval($element['style']['strokeWidth']));
-                $element['style']['opacity'] = max(0, min(1, floatval($element['style']['opacity'])));
-                $element['style']['borderRadius'] = max(0, floatval($element['style']['borderRadius']));
-
-                Log::info('Processed shape element:', $element);
-            }
-
+            // Process QR code elements (tingkatkan size generate untuk quality full, apply scale)
             if ($element['type'] === 'qrcode') {
-                if (isset($element['qrcode']) && preg_match('/^data:image\/(png|jpeg|gif);base64,/', $element['qrcode'])) {
-                    $imageData = base64_decode(preg_replace('/^data:image\/(png|jpeg|gif);base64,/', '', $element['qrcode']));
-                    $filename = 'qrcodes/' . time() . '_' . Str::random(10) . '.png';
-                    Storage::disk('public')->put($filename, $imageData);
-                    $element['qrcode'] = Storage::url($filename);
+                $certificateNumber = $element['content'] ?? $replacements['{NOMOR}'] ?? '';
+                if ($certificateNumber) {
+                    // Create verification URL
+                    $qrCodeContent = env('FRONTEND_URL') . '/sertifikat-templates/verify/' . $certificateNumber;
+                    
+                    // Calculate QR code size based on element dimensions (desired pt, lalu scale untuk generate)
+                    $qrSize = min($element['width'], $element['height']) / $scaleFactor; // Kembali ke desired pt
+                    
+                    // Generate high-quality QR code with larger size untuk sharpness saat di-PDF
+                    $qrCode = QrCode::format('png')
+                        ->size(max(600, intval($qrSize * 4))) // Tingkatkan dari *2 ke *4 untuk full quality
+                        ->margin(0) // No margin
+                        ->errorCorrection('H') // Highest error correction
+                        ->backgroundColor(255, 255, 255, 0) // Transparent
+                        ->color(0, 0, 0)
+                        ->generate($qrCodeContent);
+                    
+                    $element['qrcode'] = 'data:image/png;base64,' . base64_encode($qrCode);
+                    
+                    // Ensure QR code position is valid and centered
+                    $element['x'] = max(0, min($element['x'], $this->pdfWidth * $scaleFactor - $element['width']));
+                    $element['y'] = max(0, min($element['y'], $this->pdfHeight * $scaleFactor - $element['height']));
                 }
             }
-
-            // Remove any scaling-related properties
-            unset($element['originalX'], $element['originalY']);
-            unset($element['originalWidth'], $element['originalHeight']);
 
             return $element;
         }, $elements);
