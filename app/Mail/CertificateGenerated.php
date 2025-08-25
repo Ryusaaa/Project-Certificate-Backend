@@ -9,8 +9,9 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 
-class CertificateGenerated extends Mailable
+class CertificateGenerated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -21,7 +22,10 @@ class CertificateGenerated extends Mailable
         public string $recipientName,
         public string $certificateNumber,
         public string $downloadUrl,
-        public string $pdfContent
+        // pdfPath is the storage path (relative to disk) where worker will read the file
+        public string $pdfPath,
+        // optional filename for attachment
+        public string $pdfFilename = 'certificate.pdf'
     ) {
     }
 
@@ -57,9 +61,14 @@ class CertificateGenerated extends Mailable
      */
     public function attachments(): array
     {
-        return [
-            Attachment::fromData(fn () => $this->pdfContent, 'certificate.pdf')
-                ->withMime('application/pdf')
-        ];
+        // Attachment will be read at send time by the queue worker from storage
+        if (Storage::disk('public')->exists($this->pdfPath)) {
+            $data = Storage::disk('public')->get($this->pdfPath);
+            return [
+                Attachment::fromData(fn () => $data, $this->pdfFilename)->withMime('application/pdf')
+            ];
+        }
+
+        return [];
     }
 }
