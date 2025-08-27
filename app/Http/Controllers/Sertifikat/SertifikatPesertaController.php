@@ -201,16 +201,43 @@ class SertifikatPesertaController extends Controller
                 }
             }
             
+            // === PERUBAHAN UTAMA DIMULAI DI SINI ===
             if ($element['type'] === 'qrcode') {
-                $certificateNumber = $element['content'] ?? $replacements['{NOMOR}'] ?? '';
-                if ($certificateNumber) {
-                    $element['qrcode'] = $this->getQRCodeFromCertificate($certificateNumber);
-                }
+                // Ambil nomor sertifikat dari placeholder {NOMOR} untuk di-encode
+                $certificateNumber = $replacements['{NOMOR}'] ?? 'DEFAULT-CERT-NUMBER';
+                
+                // Langsung generate QR code sebagai data URI (base64)
+                $element['qrcode'] = $this->generateQrCodeDataUri($certificateNumber);
             }
+            // === PERUBAHAN UTAMA SELESAI ===
 
             return $element;
         }, $elements);
     }
+    
+    // === FUNGSI BARU UNTUK GENERATE QR CODE SEBAGAI DATA URI ===
+    private function generateQrCodeDataUri($certificateNumber)
+    {
+        try {
+            // URL yang akan di-encode di dalam QR Code
+            $qrCodeContent = config('app.frontend_url') . '/peserta?certificate_number=' . urlencode($certificateNumber);
+
+            // Generate QR code sebagai string PNG
+            $qrCodeImage = QrCode::format('png')
+                ->size(300) // Ukuran bisa disesuaikan
+                ->margin(1)
+                ->errorCorrection('H')
+                ->generate($qrCodeContent);
+
+            // Kembalikan sebagai data URI
+            return 'data:image/png;base64,' . base64_encode($qrCodeImage);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating QR code data URI', ['error' => $e->getMessage()]);
+            return null; // Kembalikan null jika terjadi error
+        }
+    }
+
 
     public function getQRCodeFromCertificate($certificateNumber)
     {
@@ -220,26 +247,29 @@ class SertifikatPesertaController extends Controller
             $certificateDownload = CertificateDownload::where('certificate_number', $certificateNumber)->first();
             if (!$certificateDownload) {
                 Log::warning('Certificate download not found for QR generation', ['number' => $certificateNumber]);
-                return ''; 
+                // JIKA TIDAK DITEMUKAN (misal saat preview), TETAP GENERATE QR SEBAGAI DATA URI
+                return $this->generateQrCodeDataUri($certificateNumber);
             }
             
             $qrCodeFileName = 'qrcodes/' . $certificateDownload->token . '.png';
+            
+            // Jika file sudah ada, gunakan itu
             if (Storage::disk('public')->exists($qrCodeFileName)) {
                 return 'data:image/png;base64,' . base64_encode(Storage::disk('public')->get($qrCodeFileName));
             }
 
+            // Jika belum ada, buat, simpan, dan kembalikan sebagai data URI
             $qrCodeContent = config('app.frontend_url') . '/peserta?certificate_number=' . urlencode($certificateNumber);
 
             $qrCode = QrCode::format('png')
                 ->size(300)->margin(1)->errorCorrection('H')
-                ->color(0, 0, 0)->backgroundColor(255, 255, 255, 127) // semi-transparent
                 ->generate($qrCodeContent);
 
             Storage::disk('public')->put($qrCodeFileName, $qrCode);
             return 'data:image/png;base64,' . base64_encode($qrCode);
 
         } catch (\Exception $e) {
-            Log::error('Error generating QR code', ['error' => $e->getMessage()]);
+            Log::error('Error in getQRCodeFromCertificate', ['error' => $e->getMessage()]);
             return '';
         }
     }
@@ -340,6 +370,13 @@ class SertifikatPesertaController extends Controller
                     'sertifikat_id' => $id
                 ]);
 
+                // Saat generate bulk, kita juga buat file fisiknya
+                $qrCodePath = 'qrcodes/' . $downloadToken . '.png';
+                $qrCodeContent = config('app.frontend_url') . '/peserta?certificate_number=' . urlencode($certificateNumber);
+                $qrCodeImage = QrCode::format('png')->size(300)->margin(1)->errorCorrection('H')->generate($qrCodeContent);
+                Storage::disk('public')->put($qrCodePath, $qrCodeImage);
+
+
                 $elements = $this->prepareElements($templateElements, [
                     '{NAMA}' => $recipient['recipient_name'], '{NOMOR}' => $certificateNumber,
                     '{TANGGAL}' => $dateText, '{INSTRUKTUR}' => $validated['instruktur']
@@ -362,7 +399,7 @@ class SertifikatPesertaController extends Controller
                         'user_id' => $user->id, 'data_activity_id' => $validated['data_activity_id'],
                         'certificate_download_id' => $download->id, 'assigned_at' => now(),
                         'status' => 'active', 'merchant_id' => $validated['merchant_id'],
-                        'qrcode_path' => 'qrcodes/' . $downloadToken . '.png'
+                        'qrcode_path' => $qrCodePath
                     ]);
                 }
 

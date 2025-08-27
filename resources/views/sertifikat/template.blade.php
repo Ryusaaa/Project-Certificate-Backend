@@ -213,7 +213,7 @@
         @if(isset($elements) && is_array($elements))
             @foreach($elements as $element)
                 @php
-                       $type = $element['type'];
+                    $type = $element['type'];
                     $x = $element['x'] ?? 0;
                     $y = $element['y'] ?? 0;
                     $w = $element['width'] ?? null;
@@ -230,53 +230,71 @@
                 @endphp
 
                 @if($type === 'text')
-    @php
-        $font = $element['font'] ?? ($element['fontFamily'] ? ['family' => $element['fontFamily']] : []);
-        $fontFamily = isset($font['family']) ? "'{$font['family']}', Arial, sans-serif" : 'Arial, sans-serif';
-        $fontWeight = $element['fontWeight'] ?? ($font['weight'] ?? '400');
-        $fontStyle  = $element['fontStyle'] ?? ($font['style'] ?? 'normal');
-        $fontSize   = $element['fontSize'] ?? 16;
-        $color      = $element['color'] ?? '#000000';
-        $text       = $element['text'] ?? '';
-        $textAlign  = $element['textAlign'] ?? 'left';
+                    @php
+                        $font = $element['font'] ?? ($element['fontFamily'] ? ['family' => $element['fontFamily']] : []);
+                        $fontFamily = isset($font['family']) ? "'{$font['family']}', Arial, sans-serif" : 'Arial, sans-serif';
+                        $fontWeight = $element['fontWeight'] ?? ($font['weight'] ?? '400');
+                        $fontStyle  = $element['fontStyle'] ?? ($font['style'] ?? 'normal');
+                        $fontSize   = $element['fontSize'] ?? 16;
+                        $color      = $element['color'] ?? '#000000';
+                        $text       = $element['text'] ?? '';
+                        $textAlign  = $element['textAlign'] ?? 'left';
+                        $width = $w ? "{$w}pt" : "auto";
+                        $textTransformCss = $transformCss;
 
-        // width agar text-align berfungsi
-        $width = $w ? "{$w}pt" : "auto";
+                        $style = "position:absolute; "
+                               . "left:{$x}pt; top:{$y}pt; "
+                               . "width:{$width}; "
+                               . "font-family:{$fontFamily}; "
+                               . "font-size:{$fontSize}pt; "
+                               . "font-weight:{$fontWeight}; "
+                               . "font-style:{$fontStyle}; "
+                               . "color:{$color}; "
+                               . "text-align:{$textAlign}; "
+                               . "{$textTransformCss}";
+                    @endphp
+                    <div class="element" style="{!! $style !!}">{!! nl2br(e($text)) !!}</div>
 
-        // transform hanya untuk rotate/scale
-        $textTransformCss = $transformCss;
-
-        $style = "position:absolute; "
-               . "left:{$x}pt; top:{$y}pt; "
-               . "width:{$width}; "
-               . "font-family:{$fontFamily}; "
-               . "font-size:{$fontSize}pt; "
-               . "font-weight:{$fontWeight}; "
-               . "font-style:{$fontStyle}; "
-               . "color:{$color}; "
-               . "text-align:{$textAlign}; "
-               . "{$textTransformCss}";
-    @endphp
-    <div class="element" style="{!! $style !!}">{!! nl2br(e($text)) !!}</div>
                 @elseif($type === 'image' || $type === 'qrcode')
                     @php
                         $src = null;
-                        if ($type === 'image') {
-                            if (!empty($element['image_path']) && file_exists(storage_path('app/public/' . $element['image_path']))) {
-                                $path = storage_path('app/public/' . $element['image_path']);
-                                $data = base64_encode(file_get_contents($path));
-                                $src = 'data:image/' . pathinfo($path, PATHINFO_EXTENSION) . ';base64,' . $data;
-                            } elseif (!empty($element['src']) && strpos($element['src'], 'data:image') === 0) {
-                                $src = $element['src'];
+                        
+                        // Helper untuk mengubah path file gambar menjadi data URI
+                        $resolveImageFileToDataUri = function ($path) {
+                            if (!$path) return null;
+                            if (strpos($path, 'data:image') === 0) return $path;
+
+                            // Normalisasi path: hapus /storage/ di depan jika ada
+                            if (strpos($path, '/storage/') === 0) {
+                                $path = substr($path, strlen('/storage/'));
                             }
-                        } else {
-                            $src = $element['qrcode'] ?? '';
+                            
+                            $fullPath = storage_path('app/public/' . ltrim($path, '/'));
+
+                            if (file_exists($fullPath)) {
+                                $data = base64_encode(file_get_contents($fullPath));
+                                $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+                                return 'data:image/' . $ext . ';base64,' . $data;
+                            }
+                            return null;
+                        };
+
+                        if ($type === 'image') {
+                            // === PERUBAHAN UTAMA DI SINI ===
+                            // Kembalikan logika yang lebih fleksibel untuk mencari path gambar
+                            $imagePath = $element['image_path'] ?? $element['imageUrl'] ?? $element['src'] ?? null;
+                            $src = $resolveImageFileToDataUri($imagePath);
+                        } 
+                        elseif ($type === 'qrcode') {
+                            // Logika untuk QR code sudah benar, tidak perlu diubah
+                            $src = $element['qrcode'] ?? null;
                         }
 
                         $style = "left:{$x}pt; top:{$y}pt;
                                   width:{$w}pt; height:{$h}pt;
                                   {$transformCss}";
                     @endphp
+
                     @if($src)
                         <div class="element element-{{$type}}" style="position:absolute; {!! $style !!}">
                             <img src="{{ $src }}" alt="{{$type}}">
