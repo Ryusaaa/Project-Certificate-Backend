@@ -154,6 +154,54 @@ class SertifikatTemplateController extends Controller
      */
     private $pdfHeight = 595;
 
+    // Normalize incoming image reference into storage-relative path (no leading slash)
+    private function storagePathFromIncoming(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') return '';
+
+        $storagePrefix = rtrim(Storage::url(''), '/'); // may be '/storage' or 'http://host/storage'
+
+        // If raw starts with storage prefix, strip it
+        if (strpos($raw, $storagePrefix) === 0) {
+            return ltrim(substr($raw, strlen($storagePrefix)), '/');
+        }
+
+        // If raw starts with '/storage/', strip '/storage/'
+        if (strpos($raw, '/storage/') === 0) {
+            return ltrim(substr($raw, strlen('/storage/')), '/');
+        }
+
+        // If raw starts with '/', strip leading slash
+        return ltrim($raw, '/');
+    }
+
+    // Convert a storage-relative path into a public URL for frontend
+    private function publicUrlFromStoragePath(?string $path): ?string
+    {
+        if (empty($path)) return null;
+        // If it's an absolute URL (uploaded earlier), try to extract a storage-relative path
+        if (preg_match('#^https?://#i', $path)) {
+            $parts = parse_url($path);
+            $p = $parts['path'] ?? '';
+            // If path already contains /storage/, return that path
+            if (strpos($p, '/storage/') === 0) return $p;
+            // If path contains /certificates/, convert to /storage/certificates/...
+            if (preg_match('#/certificates/(.+)$#', $p, $m)) {
+                return '/storage/certificates/' . ltrim($m[1], '/');
+            }
+            // If it's an absolute URL but not recognized, fallback to returning the path portion
+            if ($p !== '') return $p;
+            return $path;
+        }
+
+        // For relative values stored in DB (like 'certificates/xxx.png' or '/certificates/..'),
+        // always return a storage-relative public path starting with '/storage/'
+        $p = ltrim($path, '/');
+        if (strpos($p, 'storage/') === 0) return '/' . $p;
+        return '/storage/' . $p;
+    }
+
     /**
      * Mengunggah dan memproses gambar (background atau element).
      */
@@ -190,10 +238,12 @@ class SertifikatTemplateController extends Controller
 
             Log::info('Image uploaded successfully', ['path' => $path, 'url' => $url]);
 
+            // Return storage-relative url so frontend (Next) can use '/storage/...' without configuring remote host
+            $public = '/storage/' . ltrim($path, '/');
             return response()->json([
                 'message' => 'Image uploaded successfully',
                 'status' => 'success',
-                'url' => Storage::url($path)
+                'url' => $public
             ]);
 
         } catch (ValidationException $e) {
@@ -210,7 +260,20 @@ class SertifikatTemplateController extends Controller
      */
     public function index()
     {
-        $templates = Sertifikat::all();
+        $templates = Sertifikat::all()->map(function($t) {
+            $arr = $t->toArray();
+            // convert background and element image paths to public URLs
+            $arr['background_image'] = $this->publicUrlFromStoragePath($arr['background_image'] ?? null);
+            if (!empty($arr['elements']) && is_array($arr['elements'])) {
+                $arr['elements'] = array_map(function($el) {
+                    if (isset($el['imageUrl'])) $el['imageUrl'] = $this->publicUrlFromStoragePath($el['imageUrl']);
+                    if (isset($el['src'])) $el['src'] = $this->publicUrlFromStoragePath($el['src']);
+                    return $el;
+                }, $arr['elements']);
+            }
+            return $arr;
+        });
+
         return response()->json(['status' => 'success', 'data' => $templates]);
     }
 
@@ -226,7 +289,17 @@ class SertifikatTemplateController extends Controller
                 'certificate_number_format' => 'nullable|string',
             ]);
 
-            $background_path = str_replace(Storage::url(''), '', $validated['background_image']);
+            // Normalize incoming background_image to a storage-relative path (no leading slash)
+            $rawBg = $validated['background_image'];
+            $storagePrefix = rtrim(Storage::url(''), '/'); // e.g. '/storage' or 'http://host/storage'
+
+            if (strpos($rawBg, $storagePrefix) === 0) {
+                $background_path = ltrim(substr($rawBg, strlen($storagePrefix)), '/');
+            } else {
+                // Accept cases like '/certificates/..', '/storage/certificates/..' or 'certificates/..'
+                $background_path = ltrim(preg_replace('#^/storage/#', '', $rawBg), '/');
+            }
+
             if (!Storage::disk('public')->exists($background_path)) {
                 return response()->json(['status' => 'error', 'message' => 'Background image not found on storage.'], 404);
             }
@@ -235,10 +308,26 @@ class SertifikatTemplateController extends Controller
             $template->name = $validated['name'];
             $template->background_image = $background_path;
 
+            // Normalize element image URLs but keep editor coordinates untouched
             $processedElements = array_map(function($element) {
-                if ($element['type'] === 'image' && !empty($element['imageUrl'])) {
-                    // Convert full URL to relative storage path
-                    $element['imageUrl'] = str_replace(Storage::url(''), '', $element['imageUrl']);
+                if (isset($element['type']) && $element['type'] === 'image' && !empty($element['imageUrl'])) {
+                    $raw = $element['imageUrl'];
+                    $storagePrefix = rtrim(Storage::url(''), '/');
+                    if (strpos($raw, $storagePrefix) === 0) {
+                        $element['imageUrl'] = ltrim(substr($raw, strlen($storagePrefix)), '/');
+                    } else {
+                        $element['imageUrl'] = ltrim(preg_replace('#^/storage/#', '', $raw), '/');
+                    }
+                }
+                // Also normalize image src if present
+                if (isset($element['src']) && !empty($element['src'])) {
+                    $raw2 = $element['src'];
+                    $storagePrefix = rtrim(Storage::url(''), '/');
+                    if (strpos($raw2, $storagePrefix) === 0) {
+                        $element['src'] = ltrim(substr($raw2, strlen($storagePrefix)), '/');
+                    } else {
+                        $element['src'] = ltrim(preg_replace('#^/storage/#', '', $raw2), '/');
+                    }
                 }
                 return $element;
             }, $validated['elements']);
@@ -274,7 +363,16 @@ class SertifikatTemplateController extends Controller
     public function show($id)
     {
         try {
-            $template = Sertifikat::findOrFail($id);
+            $t = Sertifikat::findOrFail($id);
+            $template = $t->toArray();
+            $template['background_image'] = $this->publicUrlFromStoragePath($template['background_image'] ?? null);
+            if (!empty($template['elements']) && is_array($template['elements'])) {
+                $template['elements'] = array_map(function($el) {
+                    if (isset($el['imageUrl'])) $el['imageUrl'] = $this->publicUrlFromStoragePath($el['imageUrl']);
+                    if (isset($el['src'])) $el['src'] = $this->publicUrlFromStoragePath($el['src']);
+                    return $el;
+                }, $template['elements']);
+            }
             return response()->json(['status' => 'success', 'data' => $template]);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Template not found'], 404);
@@ -297,11 +395,40 @@ class SertifikatTemplateController extends Controller
                 'merchant_id' => 'sometimes|required|exists:merchants,id'
             ]);
 
+            // Normalize background_image on update
             if (isset($validated['background_image'])) {
-                $validated['background_image'] = str_replace(Storage::url(''), '', $validated['background_image']);
+                $rawBg2 = $validated['background_image'];
+                $storagePrefix2 = rtrim(Storage::url(''), '/');
+                if (strpos($rawBg2, $storagePrefix2) === 0) {
+                    $validated['background_image'] = ltrim(substr($rawBg2, strlen($storagePrefix2)), '/');
+                } else {
+                    $validated['background_image'] = ltrim(preg_replace('#^/storage/#', '', $rawBg2), '/');
+                }
             }
+
+            // Normalize elements (do not convert coordinates here; keep editor coords)
             if (isset($validated['elements'])) {
-                $validated['elements'] = $this->processElements($validated['elements'], []);
+                $validated['elements'] = array_map(function($element) {
+                    if (isset($element['imageUrl']) && !empty($element['imageUrl'])) {
+                        $raw = $element['imageUrl'];
+                        $storagePrefix = rtrim(Storage::url(''), '/');
+                        if (strpos($raw, $storagePrefix) === 0) {
+                            $element['imageUrl'] = ltrim(substr($raw, strlen($storagePrefix)), '/');
+                        } else {
+                            $element['imageUrl'] = ltrim(preg_replace('#^/storage/#', '', $raw), '/');
+                        }
+                    }
+                    if (isset($element['src']) && !empty($element['src'])) {
+                        $raw2 = $element['src'];
+                        $storagePrefix = rtrim(Storage::url(''), '/');
+                        if (strpos($raw2, $storagePrefix) === 0) {
+                            $element['src'] = ltrim(substr($raw2, strlen($storagePrefix)), '/');
+                        } else {
+                            $element['src'] = ltrim(preg_replace('#^/storage/#', '', $raw2), '/');
+                        }
+                    }
+                    return $element;
+                }, $validated['elements']);
             }
 
             // Validate certificate number format if provided
