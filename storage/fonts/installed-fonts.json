@@ -32,9 +32,9 @@
     },
     "poppins": {
         "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_normal_5e882467ad8772e64689184bdb891eaa",
-        "500": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_cc59382aa55ed4c4f173dfc4fc24be81",
+        "500": "poppins_500_cc59382aa55ed4c4f173dfc4fc24be81",
         "500_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_500_italic_d5b8bf10cc9b5ce7db91de4bb4470011",
-        "600": "poppins_600_f8f1acc4953dfb03f114a9ad8b3b0517",
+        "600": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_f8f1acc4953dfb03f114a9ad8b3b0517",
         "600_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_600_italic_445fc62bdcf0fba84b54a06acec0a856",
         "bold": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_4f0fbb182eb5eb68b2ece4ffed969ed1",
         "bold_italic": "C:\\Users\\indra\\OneDrive\\Dokumen\\Goldy\\Code\\Project PKL\\sertifikasi-online-diantara-backend\\storage\\fonts\/poppins_bold_italic_6008366665026896ac834a5d1145fc7c",
@@ -242,7 +242,8 @@
     },
     "oswald": {
         "600": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/oswald_600_4477444c47385abeb0dc6df38210dfb3",
-        "normal": "oswald_normal_21deae8f7e71528a39ac3145d665c410"
+        "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/oswald_normal_21deae8f7e71528a39ac3145d665c410",
+        "500": "oswald_500_682833818e6acbf76bf446b2e502ab68"
     },
     "oswald-oswald-semibold": {
         "600": "oswald_oswald_semibold_600_4477444c47385abeb0dc6df38210dfb3"
