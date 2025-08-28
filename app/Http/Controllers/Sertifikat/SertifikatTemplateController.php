@@ -619,6 +619,13 @@ class SertifikatTemplateController extends Controller
                 $element['height'] = max(10, $element['height']);
             }
 
+            // Process shape elements
+            if ($element['type'] === 'shape') {
+                if (isset($element['style']['strokeWidth'])) {
+                    $element['style']['strokeWidth'] *= $scaleFactor;
+                }
+            }
+
             // Process QR code elements (tingkatkan size generate untuk quality full, apply scale)
             if ($element['type'] === 'qrcode') {
                 $certificateNumber = $element['content'] ?? $replacements['{NOMOR}'] ?? '';

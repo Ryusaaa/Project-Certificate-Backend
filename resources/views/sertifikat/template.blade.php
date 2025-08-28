@@ -259,12 +259,10 @@
                     @php
                         $src = null;
                         
-                        // Helper untuk mengubah path file gambar menjadi data URI
                         $resolveImageFileToDataUri = function ($path) {
                             if (!$path) return null;
                             if (strpos($path, 'data:image') === 0) return $path;
 
-                            // Normalisasi path: hapus /storage/ di depan jika ada
                             if (strpos($path, '/storage/') === 0) {
                                 $path = substr($path, strlen('/storage/'));
                             }
@@ -280,13 +278,10 @@
                         };
 
                         if ($type === 'image') {
-                            // === PERUBAHAN UTAMA DI SINI ===
-                            // Kembalikan logika yang lebih fleksibel untuk mencari path gambar
                             $imagePath = $element['image_path'] ?? $element['imageUrl'] ?? $element['src'] ?? null;
                             $src = $resolveImageFileToDataUri($imagePath);
                         } 
                         elseif ($type === 'qrcode') {
-                            // Logika untuk QR code sudah benar, tidak perlu diubah
                             $src = $element['qrcode'] ?? null;
                         }
 
@@ -300,6 +295,24 @@
                             <img src="{{ $src }}" alt="{{$type}}">
                         </div>
                     @endif
+                @elseif($type === 'shape')
+                    @php
+                        $shapeType = $element['shapeType'] ?? 'rectangle';
+                        $style = $element['style'] ?? [];
+                        $fillColor = $style['fillColor'] ?? 'transparent';
+                        $strokeColor = $style['color'] ?? '#000000';
+                        $strokeWidth = isset($style['strokeWidth']) ? floatval($style['strokeWidth']) : 0;
+                        $opacity = $style['opacity'] ?? 1;
+                        $svgW = $w ?? 0;
+                        $svgH = $h ?? 0;
+                    @endphp
+                    <svg style="position:absolute; left:{{$x}}pt; top:{{$y}}pt; {{$transformCss}}" width="{{$svgW}}pt" height="{{$svgH}}pt">
+                        @if($shapeType === 'rectangle')
+                            <rect x="0" y="0" width="{{$svgW}}" height="{{$svgH}}" fill="{{$fillColor}}" stroke="{{$strokeColor}}" stroke-width="{{$strokeWidth}}" opacity="{{$opacity}}" />
+                        @elseif($shapeType === 'ellipse' || $shapeType === 'circle')
+                            <ellipse cx="{{$svgW/2}}" cy="{{$svgH/2}}" rx="{{$svgW/2}}" ry="{{$svgH/2}}" fill="{{$fillColor}}" stroke="{{$strokeColor}}" stroke-width="{{$strokeWidth}}" opacity="{{$opacity}}" />
+                        @endif
+                    </svg>
                 @endif
             @endforeach
         @endif
