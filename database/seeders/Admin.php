@@ -20,7 +20,7 @@ class Admin extends Seeder
             'email' => 'dev@diantara.net',
             'password' => Hash::make('programmer'),
             'role_id' => 1,
-            'merchant_id' => 1,
+            'merchant_id' => 0,
         ]);
 
         $this->command->info('Admin user created successfully.');

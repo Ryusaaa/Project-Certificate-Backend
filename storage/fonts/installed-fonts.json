@@ -244,7 +244,8 @@
         "600": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/oswald_600_4477444c47385abeb0dc6df38210dfb3",
         "normal": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/oswald_normal_21deae8f7e71528a39ac3145d665c410",
         "500": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/oswald_500_682833818e6acbf76bf446b2e502ab68",
-        "bold_italic": "oswald_bold_italic_b9b91fff3728fcd360044395a0fff30b"
+        "bold_italic": "C:\\laragon\\www\\sertifikasi-online-diantara-backend\\storage\\fonts\/oswald_bold_italic_b9b91fff3728fcd360044395a0fff30b",
+        "bold": "oswald_bold_b9b91fff3728fcd360044395a0fff30b"
     },
     "oswald-oswald-semibold": {
         "600": "oswald_oswald_semibold_600_4477444c47385abeb0dc6df38210dfb3"
