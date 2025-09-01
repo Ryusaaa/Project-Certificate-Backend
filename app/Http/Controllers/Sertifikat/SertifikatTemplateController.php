@@ -619,11 +619,74 @@ class SertifikatTemplateController extends Controller
                 $element['height'] = max(10, $element['height']);
             }
 
-            // Process shape elements
-            if ($element['type'] === 'shape') {
-                if (isset($element['style']['strokeWidth'])) {
-                    $element['style']['strokeWidth'] *= $scaleFactor;
+
+            // Process QR code elements (tingkatkan size generate untuk quality full, apply scale)
+            if ($element['type'] === 'qrcode') {
+                $certificateNumber = $element['content'] ?? $replacements['{NOMOR}'] ?? '';
+                if ($certificateNumber) {
+                    // Create verification URL
+                    $qrCodeContent = env('FRONTEND_URL') . '/sertifikat-templates/verify/' . $certificateNumber;
+                    
+                    // Calculate QR code size based on element dimensions (desired pt, lalu scale untuk generate)
+                    $qrSize = min($element['width'], $element['height']) / $scaleFactor; // Kembali ke desired pt
+                    
+                    // Generate high-quality QR code with larger size untuk sharpness saat di-PDF
+                    $qrCode = QrCode::format('png')
+                        ->size(max(600, intval($qrSize * 4))) // Tingkatkan dari *2 ke *4 untuk full quality
+                        ->margin(0) // No margin
+                        ->errorCorrection('H') // Highest error correction
+                        ->backgroundColor(255, 255, 255, 0) // Transparent
+                        ->color(0, 0, 0)
+                        ->generate($qrCodeContent);
+                    
+                    $element['qrcode'] = 'data:image/png;base64,' . base64_encode($qrCode);
+                    
+                    // Ensure QR code position is valid and centered
+                    $element['x'] = max(0, min($element['x'], $this->pdfWidth * $scaleFactor - $element['width']));
+                    $element['y'] = max(0, min($element['y'], $this->pdfHeight * $scaleFactor - $element['height']));
                 }
+            }
+
+            // Process shape elements - normalize and log
+            if ($element['type'] === 'shape') {
+                // Ensure all shape properties are properly set
+                $element['shapeType'] = $element['shapeType'] ?? 'rectangle';
+                
+                // Normalize style properties
+                if (!isset($element['style'])) {
+                    $element['style'] = [];
+                }
+                
+                // Map individual properties to style object for consistency
+                $styleProps = ['fillColor', 'strokeColor', 'color', 'strokeWidth', 'opacity', 'borderRadius'];
+                foreach ($styleProps as $prop) {
+                    if (isset($element[$prop])) {
+                        $element['style'][$prop] = $element[$prop];
+                    }
+                }
+                
+                // Set default values
+                $element['style']['fillColor'] = $element['style']['fillColor'] ?? 'transparent';
+                $element['style']['strokeColor'] = $element['style']['strokeColor'] ?? $element['style']['color'] ?? '#000000';
+                $element['style']['strokeWidth'] = $element['style']['strokeWidth'] ?? 1;
+                $element['style']['opacity'] = $element['style']['opacity'] ?? 1;
+                $element['style']['borderRadius'] = $element['style']['borderRadius'] ?? 0;
+                
+                // Ensure visibility
+                $element['isVisible'] = $element['isVisible'] ?? true;
+                $element['zIndex'] = $element['zIndex'] ?? 1;
+                
+                Log::info('Processing shape element', [
+                    'id' => $element['id'] ?? 'unknown',
+                    'shapeType' => $element['shapeType'],
+                    'style' => $element['style'],
+                    'dimensions' => [
+                        'x' => $element['x'],
+                        'y' => $element['y'], 
+                        'width' => $element['width'],
+                        'height' => $element['height']
+                    ]
+                ]);
             }
 
             // Process QR code elements (tingkatkan size generate untuk quality full, apply scale)

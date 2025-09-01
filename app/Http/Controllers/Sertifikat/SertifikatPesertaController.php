@@ -144,6 +144,7 @@ class SertifikatPesertaController extends Controller
                 'date' => 'required|date',
                 'merchant_id' => 'required|exists:merchants,id',
                 'instruktur' => 'required|string',
+                'elements' => 'sometimes|array' // TAMBAHKAN INI
             ]);
 
             $template = Sertifikat::find($id);
@@ -155,15 +156,28 @@ class SertifikatPesertaController extends Controller
             Carbon::setLocale('id');
             $dateText = Carbon::parse($validated['date'])->translatedFormat('d F Y');
             
+            // GUNAKAN ELEMENTS DARI REQUEST JIKA ADA
             $templateElements = $request->has('elements') && is_array($request->input('elements'))
                 ? $request->input('elements')
                 : (is_array($template->elements) ? $template->elements : []);
+
 
             $elements = $this->prepareElements($templateElements, [
                 '{NAMA}' => $validated['recipient_name'],
                 '{NOMOR}' => $validated['certificate_number'],
                 '{TANGGAL}' => $dateText,
                 '{INSTRUKTUR}' => $validated['instruktur']
+            ]);
+
+            // Debug: Log elements sebelum dikirim ke view
+            $shapeElementsAfter = array_filter($elements, function($el) {
+                return isset($el['type']) && $el['type'] === 'shape';
+            });
+            Log::info('Final elements being sent to PDF view', [
+                'template_id' => $id,
+                'total_elements' => count($elements),
+                'shape_elements_count' => count($shapeElementsAfter),
+                'shape_elements' => $shapeElementsAfter
             ]);
 
             $data = [
@@ -186,6 +200,7 @@ class SertifikatPesertaController extends Controller
         }
     }
 
+
     private function prepareElements($elements, $replacements)
     {
         if (!is_array($elements)) {
@@ -193,17 +208,79 @@ class SertifikatPesertaController extends Controller
         }
         
         return array_map(function($element) use ($replacements) {
+            // Deep clone untuk mencegah mutation
+            $element = json_decode(json_encode($element), true);
+            
+            // Pastikan semua element punya properti dasar
+            $element['x'] = isset($element['x']) ? floatval($element['x']) : 0;
+            $element['y'] = isset($element['y']) ? floatval($element['y']) : 0;
+            $element['width'] = isset($element['width']) ? floatval($element['width']) : 100;
+            $element['height'] = isset($element['height']) ? floatval($element['height']) : 100;
+            
+            // Process text elements
             if ($element['type'] === 'text' && isset($element['text'])) {
                 if (isset($element['placeholderType']) && $element['placeholderType'] !== 'custom') {
                     if (isset($replacements[$element['text']])) {
                         $element['text'] = $replacements[$element['text']];
                     }
+                } else {
+                    // Replace placeholders in custom text
+                    foreach ($replacements as $placeholder => $value) {
+                        if (strpos($element['text'], $placeholder) !== false) {
+                            $element['text'] = str_replace($placeholder, $value, $element['text']);
+                        }
+                    }
                 }
             }
             
+            // Process QR code elements
             if ($element['type'] === 'qrcode') {
                 $certificateNumber = $replacements['{NOMOR}'] ?? 'DEFAULT-CERT-NUMBER';
                 $element['qrcode'] = $this->generateQrCodeDataUri($certificateNumber);
+            }
+            
+            // TAMBAHKAN INI: Process shape elements
+            if ($element['type'] === 'shape') {
+                // Ensure shape has all required properties
+                $element['shapeType'] = $element['shapeType'] ?? 'rectangle';
+                
+                // Normalize style properties
+                if (!isset($element['style'])) {
+                    $element['style'] = [];
+                }
+                
+                // Map individual properties to style object for consistency
+                $styleProps = ['fillColor', 'strokeColor', 'color', 'strokeWidth', 'opacity', 'borderRadius'];
+                foreach ($styleProps as $prop) {
+                    if (isset($element[$prop])) {
+                        $element['style'][$prop] = $element[$prop];
+                    }
+                }
+                
+                // Set default values if missing
+                $element['style']['fillColor'] = $element['style']['fillColor'] ?? 'transparent';
+                $element['style']['strokeColor'] = $element['style']['strokeColor'] ?? $element['style']['color'] ?? '#000000';
+                $element['style']['strokeWidth'] = floatval($element['style']['strokeWidth'] ?? 1);
+                $element['style']['opacity'] = floatval($element['style']['opacity'] ?? 1);
+                $element['style']['borderRadius'] = floatval($element['style']['borderRadius'] ?? 0);
+                
+                // Ensure visibility
+                $element['isVisible'] = $element['isVisible'] ?? true;
+                $element['zIndex'] = intval($element['zIndex'] ?? 1);
+                
+                // Ensure minimum size untuk shape agar terlihat
+                $element['width'] = max(10, $element['width']);
+                $element['height'] = max(10, $element['height']);
+                
+                // Debug log
+                Log::info('Processing shape element in prepareElements', [
+                    'id' => $element['id'] ?? 'unknown',
+                    'shapeType' => $element['shapeType'],
+                    'position' => ['x' => $element['x'], 'y' => $element['y']],
+                    'size' => ['width' => $element['width'], 'height' => $element['height']],
+                    'style' => $element['style'],
+                    'isVisible' => $element['isVisible']
+                ]);
             }
 
             return $element;

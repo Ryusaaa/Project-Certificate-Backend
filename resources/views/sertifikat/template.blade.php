@@ -229,31 +229,53 @@
                     $transformCss = count($transformParts) > 0 ? 'transform:' . implode(' ', $transformParts) . ';' : '';
                 @endphp
 
-                @if($type === 'text')
-                    @php
-                        $font = $element['font'] ?? ($element['fontFamily'] ? ['family' => $element['fontFamily']] : []);
-                        $fontFamily = isset($font['family']) ? "'{$font['family']}', Arial, sans-serif" : 'Arial, sans-serif';
-                        $fontWeight = $element['fontWeight'] ?? ($font['weight'] ?? '400');
-                        $fontStyle  = $element['fontStyle'] ?? ($font['style'] ?? 'normal');
-                        $fontSize   = $element['fontSize'] ?? 16;
-                        $color      = $element['color'] ?? '#000000';
-                        $text       = $element['text'] ?? '';
-                        $textAlign  = $element['textAlign'] ?? 'left';
-                        $width = $w ? "{$w}pt" : "auto";
-                        $textTransformCss = $transformCss;
+@if($type === 'text')
+    @php
+        // PERBAIKAN: Safely access font properties dengan fallback
+        $font = $element['font'] ?? [];
+        
+        // Handle berbagai format font family
+        $fontFamily = null;
+        if (isset($element['fontFamily'])) {
+            $fontFamily = $element['fontFamily'];
+        } elseif (isset($font['family'])) {
+            $fontFamily = $font['family'];
+        } elseif (isset($element['font']['fontFamily'])) {
+            $fontFamily = $element['font']['fontFamily'];
+        }
+        
+        // Fallback ke Arial jika tidak ada font family
+        $fontFamilyCSS = $fontFamily ? "'{$fontFamily}', Arial, sans-serif" : 'Arial, sans-serif';
+        
+        // Safe access untuk font properties lainnya
+        $fontWeight = $element['fontWeight'] ?? ($font['weight'] ?? '400');
+        $fontStyle  = $element['fontStyle'] ?? ($font['style'] ?? 'normal');
+        $fontSize   = $element['fontSize'] ?? 16;
+        $color      = $element['color'] ?? '#000000';
+        $text       = $element['text'] ?? '';
+        $textAlign  = $element['textAlign'] ?? 'left';
+        $width = $w ? "{$w}pt" : "auto";
 
-                        $style = "position:absolute; "
-                               . "left:{$x}pt; top:{$y}pt; "
-                               . "width:{$width}; "
-                               . "font-family:{$fontFamily}; "
-                               . "font-size:{$fontSize}pt; "
-                               . "font-weight:{$fontWeight}; "
-                               . "font-style:{$fontStyle}; "
-                               . "color:{$color}; "
-                               . "text-align:{$textAlign}; "
-                               . "{$textTransformCss}";
-                    @endphp
-                    <div class="element" style="{!! $style !!}">{!! nl2br(e($text)) !!}</div>
+        $style = "position:absolute; "
+               . "left:{$x}pt; top:{$y}pt; "
+               . "width:{$width}; "
+               . "font-family:{$fontFamilyCSS}; "
+               . "font-size:{$fontSize}pt; "
+               . "font-weight:{$fontWeight}; "
+               . "font-style:{$fontStyle}; "
+               . "color:{$color}; "
+               . "text-align:{$textAlign}; "
+               . "{$transformCss}";
+               
+        // Debug log untuk text element
+        Log::info('Rendering text element', [
+            'text' => substr($text, 0, 50),
+            'fontFamily' => $fontFamily,
+            'fontSize' => $fontSize,
+            'position' => "x:{$x}, y:{$y}"
+        ]);
+    @endphp
+    <div class="element" style="{!! $style !!}">{!! nl2br(e($text)) !!}</div>
 
                 @elseif($type === 'image' || $type === 'qrcode')
                     @php
@@ -295,25 +317,76 @@
                             <img src="{{ $src }}" alt="{{$type}}">
                         </div>
                     @endif
-                @elseif($type === 'shape')
-                    @php
-                        $shapeType = $element['shapeType'] ?? 'rectangle';
-                        $style = $element['style'] ?? [];
-                        $fillColor = $style['fillColor'] ?? 'transparent';
-                        $strokeColor = $style['color'] ?? '#000000';
-                        $strokeWidth = isset($style['strokeWidth']) ? floatval($style['strokeWidth']) : 0;
-                        $opacity = $style['opacity'] ?? 1;
-                        $svgW = $w ?? 0;
-                        $svgH = $h ?? 0;
-                    @endphp
-                    <svg style="position:absolute; left:{{$x}}pt; top:{{$y}}pt; {{$transformCss}}" width="{{$svgW}}pt" height="{{$svgH}}pt">
-                        @if($shapeType === 'rectangle')
-                            <rect x="0" y="0" width="{{$svgW}}" height="{{$svgH}}" fill="{{$fillColor}}" stroke="{{$strokeColor}}" stroke-width="{{$strokeWidth}}" opacity="{{$opacity}}" />
-                        @elseif($shapeType === 'ellipse' || $shapeType === 'circle')
-                            <ellipse cx="{{$svgW/2}}" cy="{{$svgH/2}}" rx="{{$svgW/2}}" ry="{{$svgH/2}}" fill="{{$fillColor}}" stroke="{{$strokeColor}}" stroke-width="{{$strokeWidth}}" opacity="{{$opacity}}" />
-                        @endif
-                    </svg>
-                @endif
+@elseif($type === 'shape')
+    @php
+        $shapeType = $element['shapeType'] ?? 'rectangle';
+        $style = $element['style'] ?? [];
+        $fillColor = $style['fillColor'] ?? 'transparent';
+        $strokeColor = $style['color'] ?? $style['strokeColor'] ?? '#000000';
+        $strokeWidth = isset($style['strokeWidth']) ? floatval($style['strokeWidth']) : 1;
+        $opacity = $style['opacity'] ?? 1;
+        $borderRadius = $style['borderRadius'] ?? 0;
+        $svgW = $w ?? 100;
+        $svgH = $h ?? 100;
+        
+        // Check visibility
+        $isVisible = ($element['isVisible'] ?? true) && ($opacity > 0);
+        
+        Log::info('Rendering shape in blade', [
+            'shapeType' => $shapeType,
+            'isVisible' => $isVisible,
+            'position' => "x:{$x}, y:{$y}",
+            'size' => "w:{$svgW}, h:{$svgH}",
+            'fillColor' => $fillColor,
+            'strokeColor' => $strokeColor
+        ]);
+    @endphp
+    
+    @if($isVisible)
+        {{-- Use px units for better DomPDF compatibility --}}
+        @if($shapeType === 'rectangle')
+            <div style="position:absolute; left:{{$x}}px; top:{{$y}}px; width:{{$svgW}}px; height:{{$svgH}}px; background-color:{{$fillColor}}; border:{{$strokeWidth}}px solid {{$strokeColor}}; border-radius:{{$borderRadius}}px; opacity:{{$opacity}}; {{$transformCss}}"></div>
+        @elseif($shapeType === 'circle')
+            <div style="position:absolute; left:{{$x}}px; top:{{$y}}px; {{$transformCss}}">
+                <svg width="{{$svgW}}px" height="{{$svgH}}px" viewBox="0 0 {{$svgW}} {{$svgH}}" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="{{$svgW/2}}" cy="{{$svgH/2}}" rx="{{$svgW/2}}" ry="{{$svgH/2}}" fill="{{$fillColor}}" stroke="{{$strokeColor}}" stroke-width="{{$strokeWidth}}" opacity="{{$opacity}}" />
+                </svg>
+            </div>
+        @elseif($shapeType === 'line')
+            <div style="position:absolute; left:{{$x}}px; top:{{ $y + ($svgH/2) }}px; width:{{$svgW}}px; height:{{$strokeWidth}}px; background-color:{{$strokeColor}}; opacity:{{$opacity}}; {{$transformCss}}"></div>
+        @else
+            {{-- For complex shapes, use simplified SVG with explicit namespace --}}
+            @php
+                // Generate simple SVG paths for DomPDF
+                $shapePath = '';
+                switch($shapeType) {
+                    case 'triangle':
+                        $shapePath = "M" . ($svgW / 2) . ",0 L{$svgW},{$svgH} L0,{$svgH} Z";
+                        break;
+                    case 'diamond':
+                        $shapePath = "M" . ($svgW / 2) . ",0 L{$svgW}," . ($svgH / 2) . " L" . ($svgW / 2) . ",{$svgH} L0," . ($svgH / 2) . " Z";
+                        break;
+                    case 'star':
+                        // Simplified 5-point star
+                        $cx = $svgW / 2; $cy = $svgH / 2; $r = min($svgW, $svgH) / 3;
+                        $shapePath = "M{$cx}," . ($cy - $r) . " L" . ($cx + $r*0.3) . "," . ($cy - $r*0.3) . " L" . ($cx + $r) . "," . ($cy - $r*0.3) . " L" . ($cx + $r*0.5) . "," . ($cy + $r*0.2) . " L" . ($cx + $r*0.8) . "," . ($cy + $r) . " L{$cx}," . ($cy + $r*0.5) . " L" . ($cx - $r*0.8) . "," . ($cy + $r) . " L" . ($cx - $r*0.5) . "," . ($cy + $r*0.2) . " L" . ($cx - $r) . "," . ($cy - $r*0.3) . " L" . ($cx - $r*0.3) . "," . ($cy - $r*0.3) . " Z";
+                        break;
+                    default:
+                        $shapePath = "M0,0 L{$svgW},0 L{$svgW},{$svgH} L0,{$svgH} Z";
+                }
+            @endphp
+            <div style="position:absolute; left:{{$x}}px; top:{{$y}}px; {{$transformCss}}">
+                <svg width="{{$svgW}}px" height="{{$svgH}}px" viewBox="0 0 {{$svgW}} {{$svgH}}" xmlns="http://www.w3.org/2000/svg" version="1.1">
+                    <path d="{{ $shapePath }}" 
+                          fill="{{$fillColor === 'transparent' ? 'none' : $fillColor}}" 
+                          stroke="{{$strokeColor}}" 
+                          stroke-width="{{$strokeWidth}}" 
+                          opacity="{{$opacity}}" />
+                </svg>
+            </div>
+        @endif
+    @endif
+@endif
             @endforeach
         @endif
     </div>
