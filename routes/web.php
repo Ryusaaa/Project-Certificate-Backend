@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SmtpController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\UserApiController;
@@ -96,6 +97,10 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::get('/preview/{token}', [SertifikatPesertaController::class, 'previewPDFWithToken']);
     Route::get('/users/{userId}/certificates', [SertifikatPesertaController::class, 'getUserCertificates']); // Endpoint buat halaman peserta
 });
+
+
+// ROUTE SMTP
+Route::put('/smtp', [SmtpController::class, 'editOrCreate']);
 
 Route::post('sertifikat/validate/peserta', [SertifikatPesertaController::class, 'getCertificateByNumber']);
 
