@@ -16,37 +16,11 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SertifikatPesertaController extends Controller
 {
-
-    private function getAllFonts()
-    {
-        $fontsDir = public_path('fonts');
-        $fonts = [];
-
-        if (!is_dir($fontsDir))
-            return $fonts;
-
-        foreach (scandir($fontsDir) as $fontFamily) {
-            if ($fontFamily === '.' || $fontFamily === '..')
-                continue;
-            $familyPath = $fontsDir . DIRECTORY_SEPARATOR . $fontFamily;
-            if (is_dir($familyPath)) {
-                $fonts[$fontFamily] = [];
-                foreach (scandir($familyPath) as $fontFile) {
-                    if (in_array($fontFile, ['.', '..']))
-                        continue;
-                    $ext = pathinfo($fontFile, PATHINFO_EXTENSION);
-                    if (in_array(strtolower($ext), ['ttf', 'otf', 'woff', 'woff2'])) {
-                        $fonts[$fontFamily][] = $fontFile;
-                    }
-                }
-            }
-        }
-        return $fonts;
-    }
 
     private $pdfWidth = 842;    // A4 Landscape width
     private $pdfHeight = 595;   // A4 Landscape height
@@ -200,6 +174,263 @@ class SertifikatPesertaController extends Controller
         }
     }
 
+    public function generateBulkPDF(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'recipients' => 'required|array|min:1',
+                'recipients.*.recipient_name' => 'required|string',
+                'recipients.*.date' => 'required|date',
+                'recipients.*.email' => 'required|email',
+                'certificate_number_format' => 'nullable|string',
+                'merchant_id' => 'required|exists:merchants,id',
+                'data_activity_id' => 'required|exists:data_activity,id',
+                'instruktur' => 'required|string',
+            ]);
+            
+            $template = Sertifikat::findOrFail($id);
+            $generatedPDFs = [];
+
+            foreach ($validated['recipients'] as $recipient) {
+                setlocale(LC_TIME, 'id_ID');
+                Carbon::setLocale('id');
+                $dateText = Carbon::parse($recipient['date'])->translatedFormat('d F Y');
+                
+                $templateElements = $request->has('elements') && is_array($request->input('elements'))
+                    ? $request->input('elements')
+                    : (is_array($template->elements) ? $template->elements : []);
+                
+                $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format'] ?? null);
+                $filename = sprintf('sertifikat_%s_%s.pdf', Str::slug($recipient['recipient_name']), Str::slug($certificateNumber));
+                $downloadToken = Str::random(12);
+
+                $user = User::where('email', $recipient['email'])->first();
+                $download = $template->createDownload([
+                    'token' => $downloadToken, 'filename' => $filename,
+                    'recipient_name' => $recipient['recipient_name'], 'certificate_number' => $certificateNumber,
+                    'user_id' => $user->id ?? null, 'expires_at' => now()->addDays(30),
+                    'merchant_id' => $validated['merchant_id'], 'data_activity_id' => $validated['data_activity_id'],
+                    'sertifikat_id' => $id
+                ]);
+
+                $qrCodePath = 'qrcodes/' . $downloadToken . '.png';
+                $qrCodeContent = config('app.frontend_url') . '/peserta?certificate_number=' . urlencode($certificateNumber);
+                $qrCodeImage = QrCode::format('png')->size(300)->margin(1)->errorCorrection('H')->generate($qrCodeContent);
+                Storage::disk('public')->put($qrCodePath, $qrCodeImage);
+
+                $elements = $this->prepareElements($templateElements, [
+                    '{NAMA}' => $recipient['recipient_name'], '{NOMOR}' => $certificateNumber,
+                    '{TANGGAL}' => $dateText, '{INSTRUKTUR}' => $validated['instruktur']
+                ]);
+
+                $data = [
+                    'template' => $template, 'elements' => $elements,
+                    'background_image' => Storage::disk('public')->path($template->background_image),
+                    'pageWidth' => $this->pdfWidth, 'pageHeight' => $this->pdfHeight
+                ];
+
+                $pdf = PDF::loadView('sertifikat.template', $data)
+                    ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
+
+                $pdfPath = 'certificates/generated/' . $filename;
+                Storage::disk('public')->put($pdfPath, $pdf->output());
+
+                if ($user) {
+                    UserCertificate::create([
+                        'user_id' => $user->id, 'data_activity_id' => $validated['data_activity_id'],
+                        'certificate_download_id' => $download->id, 'assigned_at' => now(),
+                        'status' => 'active', 'merchant_id' => $validated['merchant_id'],
+                        'qrcode_path' => $qrCodePath
+                    ]);
+                }
+
+                // try {
+                //     Mail::to($recipient['email'])->queue(new CertificateGenerated(
+                //         $recipient['recipient_name'], $certificateNumber,
+                //         url('/sertifikat-templates/download/' . $downloadToken),
+                //         $pdfPath, $filename
+                //     ));
+                //     $emailQueued = true;
+                // } catch (\Exception $e) {
+                //     Log::error('Failed to queue email', ['error' => $e->getMessage()]);
+                //     $emailQueued = false;
+                // }
+
+                $generatedPDFs[] = [
+                    'recipient_name' => $recipient['recipient_name'], 'certificate_number' => $certificateNumber,
+                    'view_url' => Storage::url($pdfPath), 'download_url' => url('/sertifikat-templates/download/' . $downloadToken),
+                    // 'email_queued' => $emailQueued
+                ];
+            }
+
+            return response()->json(['status' => 'success', 'message' => 'Sertifikat berhasil dibuat', 'data' => $generatedPDFs]);
+        } catch (\Exception $e) {
+            Log::error('Error generating bulk PDFs', ['error' => $e->getMessage()]);
+            return response()->json(['status' => 'error', 'message' => 'Gagal membuat sertifikat massal.'], 500);
+        }
+    }
+
+    public function previewByUserCertificate($userId)
+    {
+        try {
+            $userCert = UserCertificate::with('certificateDownload')
+                ->where('user_id', $userId)
+                ->where('status', 'active')
+                ->orderBy('assigned_at', 'desc')
+                ->firstOrFail();
+
+            $download = $userCert->certificateDownload;
+            if(!$download) {
+                return response()->json(['message' => 'Data sertifikat tidak ditemukan'], 404);
+            }
+
+            $filename = $download->filename ?? $userCert->filename ?? null;
+            if (!$filename) {
+                return response()->json(['message' => 'File tidak ditemukan'], 404);
+            }
+
+            $filepath = 'certificates/generated/' . $download->filename;
+            if (!Storage::disk('public')->exists($filepath)) {
+                return response()->json(['message' => 'File tidak ditemukan'], 404);
+            }
+
+            $fullpath = Storage::disk('public')->path($filepath);
+
+            return response()->stream(function () use ($fullpath) {
+                $stream = fopen($fullpath, 'rb');
+                if ($stream) {
+                    while (!feof($stream)) {
+                        echo fread($stream, 1024);
+                    }
+                    fclose($stream);
+                }
+            }, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($fullpath) . '"'
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            Log::error('Error previewing PDF by user certificate', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal menampilkan sertifikat peserta'], 500);
+        }
+    }
+
+    public function downloadByUserCertificate($userId)
+    {
+        try {
+            $userCert = UserCertificate::with('certificateDownload')
+                ->where('user_id', $userId)
+                ->where('status', 'active')
+                ->orderBy('assigned_at', 'desc')
+                ->firstOrFail();
+
+            $download = $userCert->certificateDownload;
+            if(!$download) {
+                return response()->json(['message' => 'Data sertifikat tidak ditemukan'], 404);
+            }
+
+            if (method_exists($download, 'isExpired') && $download->isExpired()) {
+                return response()->json(['message' => 'Link download kadaluarsa'], 410);
+            }
+
+            $filepath = 'certificates/generated/' . $download->filename;
+            if (!Storage::disk('public')->exists($filepath)) {
+                return response()->json(['message' => 'File tidak ditemukan'], 404);
+            }
+
+            if (method_exists($download, 'incrementDownloadCount')) {
+                $download->incrementDownloadCount();
+            }
+
+            return response()->download(Storage::disk('public')->path($filepath), $download->filename);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            Log::error('Error downloading PDF by user certificate', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Gagal mengunduh sertifikat peserta'], 500);
+        }
+    }
+
+    /**
+     * Helper to queue certificate email. Returns true on queued, false on failure.
+     */
+    public function sendMailWithCertificate($recipientEmail, $recipientName, $certificateNumber, $downloadUrl, $pdfPath, $filename)
+    {
+        try {
+            Mail::to($recipientEmail)->queue(new CertificateGenerated(
+                $recipientName, $certificateNumber, $downloadUrl, $pdfPath, $filename
+            ));
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to send certificate email', ['error' => $e->getMessage(), 'email' => $recipientEmail]);
+            return false;
+        }
+    }
+
+    public function sendMailPeserta(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'recipients' => 'required|array|min:1',
+                'recipients.*.email' => 'required|email',
+                'recipients.*.token' => 'nullable|string',
+                'recipients.*.certificate_number' => 'nullable|string',
+                'recipients.*.send' => 'required|boolean'
+            ]);
+
+            $results = [];
+
+            foreach ($validated['recipients'] as $recipient) {
+                // only send when checkbox/send flag is true
+                if (empty($recipient['send'])) {
+                    $results[] = ['email' => $recipient['email'], 'sent' => false, 'reason' => 'not_selected'];
+                    continue;
+                }
+
+                // try find CertificateDownload by token first, then by certificate_number
+                $download = null;
+                if (!empty($recipient['token'])) {
+                    $download = CertificateDownload::where('token', $recipient['token'])->first();
+                }
+                if (!$download && !empty($recipient['certificate_number'])) {
+                    $download = CertificateDownload::where('certificate_number', $recipient['certificate_number'])->first();
+                }
+
+                if (!$download) {
+                    Log::warning('CertificateDownload not found for sendMailPeserta', ['recipient' => $recipient]);
+                    $results[] = ['email' => $recipient['email'], 'sent' => false, 'reason' => 'download_not_found'];
+                    continue;
+                }
+
+                $pdfPath = 'certificates/generated/' . ($download->filename ?? '');
+                if (!Storage::disk('public')->exists($pdfPath)) {
+                    Log::warning('PDF file not found for sendMailPeserta', ['path' => $pdfPath]);
+                    $results[] = ['email' => $recipient['email'], 'sent' => false, 'reason' => 'file_not_found'];
+                    continue;
+                }
+
+                $downloadUrl = url('/sertifikat-templates/download/' . $download->token);
+
+                // Use helper to queue the mail. It will log on failure.
+                $sent = $this->sendMailWithCertificate(
+                    $recipient['email'],
+                    $download->recipient_name ?? '',
+                    $download->certificate_number ?? '',
+                    $downloadUrl,
+                    $pdfPath,
+                    $download->filename ?? basename($pdfPath)
+                );
+
+                $results[] = ['email' => $recipient['email'], 'sent' => (bool)$sent];
+            }
+
+            return response()->json(['status' => 'success', 'data' => $results]);
+        } catch (\Exception $e) {
+            Log::error('Error in sendMailPeserta', ['error' => $e->getMessage()]);
+            return response()->json(['status' => 'error', 'message' => 'Gagal mengirim email peserta'], 500);
+        }
+    }
 
     private function prepareElements($elements, $replacements)
     {
@@ -392,101 +623,7 @@ class SertifikatPesertaController extends Controller
         }
     }
 
-    public function generateBulkPDF(Request $request, $id)
-    {
-        try {
-            $validated = $request->validate([
-                'recipients' => 'required|array|min:1',
-                'recipients.*.recipient_name' => 'required|string',
-                'recipients.*.date' => 'required|date',
-                'recipients.*.email' => 'required|email',
-                'certificate_number_format' => 'nullable|string',
-                'merchant_id' => 'required|exists:merchants,id',
-                'data_activity_id' => 'required|exists:data_activity,id',
-                'instruktur' => 'required|string',
-            ]);
-            
-            $template = Sertifikat::findOrFail($id);
-            $generatedPDFs = [];
-
-            foreach ($validated['recipients'] as $recipient) {
-                setlocale(LC_TIME, 'id_ID');
-                Carbon::setLocale('id');
-                $dateText = Carbon::parse($recipient['date'])->translatedFormat('d F Y');
-                
-                $templateElements = $request->has('elements') && is_array($request->input('elements'))
-                    ? $request->input('elements')
-                    : (is_array($template->elements) ? $template->elements : []);
-                
-                $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format'] ?? null);
-                $filename = sprintf('sertifikat_%s_%s.pdf', Str::slug($recipient['recipient_name']), Str::slug($certificateNumber));
-                $downloadToken = Str::random(12);
-
-                $user = User::where('email', $recipient['email'])->first();
-                $download = $template->createDownload([
-                    'token' => $downloadToken, 'filename' => $filename,
-                    'recipient_name' => $recipient['recipient_name'], 'certificate_number' => $certificateNumber,
-                    'user_id' => $user->id ?? null, 'expires_at' => now()->addDays(30),
-                    'merchant_id' => $validated['merchant_id'], 'data_activity_id' => $validated['data_activity_id'],
-                    'sertifikat_id' => $id
-                ]);
-
-                $qrCodePath = 'qrcodes/' . $downloadToken . '.png';
-                $qrCodeContent = config('app.frontend_url') . '/peserta?certificate_number=' . urlencode($certificateNumber);
-                $qrCodeImage = QrCode::format('png')->size(300)->margin(1)->errorCorrection('H')->generate($qrCodeContent);
-                Storage::disk('public')->put($qrCodePath, $qrCodeImage);
-
-                $elements = $this->prepareElements($templateElements, [
-                    '{NAMA}' => $recipient['recipient_name'], '{NOMOR}' => $certificateNumber,
-                    '{TANGGAL}' => $dateText, '{INSTRUKTUR}' => $validated['instruktur']
-                ]);
-
-                $data = [
-                    'template' => $template, 'elements' => $elements,
-                    'background_image' => Storage::disk('public')->path($template->background_image),
-                    'pageWidth' => $this->pdfWidth, 'pageHeight' => $this->pdfHeight
-                ];
-
-                $pdf = PDF::loadView('sertifikat.template', $data)
-                    ->setPaper([0, 0, $this->pdfWidth, $this->pdfHeight], 'landscape');
-
-                $pdfPath = 'certificates/generated/' . $filename;
-                Storage::disk('public')->put($pdfPath, $pdf->output());
-
-                if ($user) {
-                    UserCertificate::create([
-                        'user_id' => $user->id, 'data_activity_id' => $validated['data_activity_id'],
-                        'certificate_download_id' => $download->id, 'assigned_at' => now(),
-                        'status' => 'active', 'merchant_id' => $validated['merchant_id'],
-                        'qrcode_path' => $qrCodePath
-                    ]);
-                }
-
-                try {
-                    Mail::to($recipient['email'])->queue(new CertificateGenerated(
-                        $recipient['recipient_name'], $certificateNumber,
-                        url('/sertifikat-templates/download/' . $downloadToken),
-                        $pdfPath, $filename
-                    ));
-                    $emailQueued = true;
-                } catch (\Exception $e) {
-                    Log::error('Failed to queue email', ['error' => $e->getMessage()]);
-                    $emailQueued = false;
-                }
-
-                $generatedPDFs[] = [
-                    'recipient_name' => $recipient['recipient_name'], 'certificate_number' => $certificateNumber,
-                    'view_url' => Storage::url($pdfPath), 'download_url' => url('/sertifikat-templates/download/' . $downloadToken),
-                    'email_queued' => $emailQueued
-                ];
-            }
-
-            return response()->json(['status' => 'success', 'message' => 'Sertifikat berhasil dibuat', 'data' => $generatedPDFs]);
-        } catch (\Exception $e) {
-            Log::error('Error generating bulk PDFs', ['error' => $e->getMessage()]);
-            return response()->json(['status' => 'error', 'message' => 'Gagal membuat sertifikat massal.'], 500);
-        }
-    }
+    
 
     public function getUserCertificates($id)
     {

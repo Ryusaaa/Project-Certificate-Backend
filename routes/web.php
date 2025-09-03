@@ -74,7 +74,10 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::get('/{id}', [SertifikatTemplateController::class, 'show']);
     Route::put('/{id}', [SertifikatTemplateController::class, 'update']);
     Route::delete('/{id}', [SertifikatTemplateController::class, 'destroy']);
-    
+    Route::post('/send-selected', [SertifikatPesertaController::class, 'sendMailPeserta']);
+    Route::get('/download-by-user/{userId}', [SertifikatPesertaController::class, 'downloadByUserCertificate']);
+    Route::get('/preview-by-user/{userId}', [SertifikatPesertaController::class, 'previewByUserCertificate']);
+
     Route::post('/upload-image', [SertifikatTemplateController::class, 'uploadImage'])->name('sertifikat.upload-image');
 
     Route::prefix('sertifikat-templates/{id}')->group(function () {
