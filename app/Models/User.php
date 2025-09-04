@@ -84,6 +84,7 @@ class User extends Authenticatable
     public function daftarActivity()
     {
         return $this->belongsToMany(DataActivity::class, 'data_activity_user', 'user_id', 'data_activity_id')
+            ->withPivot('certificate_number', 'tanggal_sertifikat')
             ->select(['data_activity.id', 'data_activity.activity_name']);
     }
 

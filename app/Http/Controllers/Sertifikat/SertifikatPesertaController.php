@@ -208,6 +208,7 @@ class SertifikatPesertaController extends Controller
                 $download = $template->createDownload([
                     'token' => $downloadToken, 'filename' => $filename,
                     'recipient_name' => $recipient['recipient_name'], 'certificate_number' => $certificateNumber,
+                    'instruktur_name' => $validated['instruktur'] ?? null,
                     'user_id' => $user->id ?? null, 'expires_at' => now()->addDays(30),
                     'merchant_id' => $validated['merchant_id'], 'data_activity_id' => $validated['data_activity_id'],
                     'sertifikat_id' => $id
@@ -242,6 +243,19 @@ class SertifikatPesertaController extends Controller
                         'status' => 'active', 'merchant_id' => $validated['merchant_id'],
                         'qrcode_path' => $qrCodePath
                     ]);
+                    // Persist certificate number and date to pivot table data_activity_user
+                    try {
+                        $dataActivity = DataActivity::find($validated['data_activity_id']);
+                        if ($dataActivity) {
+                            $date = isset($recipient['date']) ? \Carbon\Carbon::parse($recipient['date'])->format('Y-m-d') : null;
+                            $dataActivity->peserta()->updateExistingPivot($user->id, [
+                                'certificate_number' => $certificateNumber,
+                                'tanggal_sertifikat' => $date,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Failed to update pivot data_activity_user with certificate_number', ['error' => $e->getMessage(), 'user_id' => $user->id, 'data_activity_id' => $validated['data_activity_id']]);
+                    }
                 }
 
                 // try {
@@ -267,6 +281,89 @@ class SertifikatPesertaController extends Controller
         } catch (\Exception $e) {
             Log::error('Error generating bulk PDFs', ['error' => $e->getMessage()]);
             return response()->json(['status' => 'error', 'message' => 'Gagal membuat sertifikat massal.'], 500);
+        }
+    }
+
+    /**
+     * Generate certificate numbers and download tokens for a bulk list of recipients without creating PDFs.
+     * Expected payload: recipients: [{recipient_name, email, date}], merchant_id, data_activity_id, certificate_number_format (optional), instruktur
+     */
+    public function generateBulkNumber(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'recipients' => 'required|array|min:1',
+                'recipients.*.recipient_name' => 'required|string',
+                'recipients.*.email' => 'required|email',
+                'recipients.*.date' => 'required|date',
+                'certificate_number_format' => 'nullable|string',
+                'merchant_id' => 'required|exists:merchants,id',
+                'data_activity_id' => 'required|exists:data_activity,id',
+                'instruktur' => 'required|string'
+            ]);
+
+            $template = Sertifikat::findOrFail($id);
+            $results = [];
+
+            foreach ($validated['recipients'] as $recipient) {
+                // generate certificate number using template logic
+                $certificateNumber = $this->generateCertificateNumber($template, $validated['certificate_number_format'] ?? null);
+                $downloadToken = Str::random(12);
+
+                $user = User::where('email', $recipient['email'])->first();
+
+                $filename = sprintf('sertifikat_%s_%s.pdf', Str::slug($recipient['recipient_name']), Str::slug($certificateNumber));
+
+                $download = CertificateDownload::create([
+                    'sertifikat_id' => $id,
+                    'token' => $downloadToken,
+                    'filename' => $filename,
+                    'recipient_name' => $recipient['recipient_name'],
+                    'instruktur_name' => $validated['instruktur'] ?? null,
+                    'certificate_number' => $certificateNumber,
+                    'user_id' => $user->id ?? null,
+                    'expires_at' => now()->addDays(30),
+                    'merchant_id' => $validated['merchant_id'],
+                    'data_activity_id' => $validated['data_activity_id']
+                ]);
+
+                if ($user) {
+                    UserCertificate::create([
+                        'user_id' => $user->id,
+                        'certificate_download_id' => $download->id,
+                        'status' => 'active',
+                        'assigned_at' => now(),
+                        'merchant_id' => $validated['merchant_id']
+                    ]);
+                        // Persist certificate number + date to pivot
+                        try {
+                            $dataActivity = DataActivity::find($validated['data_activity_id']);
+                            if ($dataActivity) {
+                                $date = isset($recipient['date']) ? \Carbon\Carbon::parse($recipient['date'])->format('Y-m-d') : null;
+                                $dataActivity->peserta()->updateExistingPivot($user->id, [
+                                    'certificate_number' => $certificateNumber,
+                                    'tanggal_sertifikat' => $date,
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Failed to update pivot data_activity_user with certificate_number (generateBulkNumber)', ['error' => $e->getMessage(), 'user_id' => $user->id, 'data_activity_id' => $validated['data_activity_id']]);
+                        }
+                }
+
+                $results[] = [
+                    'recipient_name' => $recipient['recipient_name'],
+                    'email' => $recipient['email'],
+                    'certificate_number' => $certificateNumber,
+                    'token' => $downloadToken,
+                    'download_url' => url('/sertifikat-templates/download/' . $downloadToken)
+                ];
+            }
+
+            return response()->json(['status' => 'success', 'message' => 'Nomor sertifikat berhasil dibuat', 'data' => $results]);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating bulk numbers', ['error' => $e->getMessage()]);
+            return response()->json(['status' => 'error', 'message' => 'Gagal membuat nomor sertifikat. ' . $e->getMessage()], 500);
         }
     }
 
@@ -309,7 +406,57 @@ class SertifikatPesertaController extends Controller
                 'Content-Disposition' => 'inline; filename="' . basename($fullpath) . '"'
             ]);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+            // Fallback: try to find CertificateDownload using query params when no UserCertificate exists
+            try {
+                $req = request();
+                $certNumber = $req->query('certificate_number');
+                $recipientName = $req->query('recipient_name');
+                $dataActivityId = $req->query('data_activity_id');
+
+                $download = null;
+                if (!empty($certNumber)) {
+                    $download = CertificateDownload::whereCertificateNumberNormalized($certNumber)->first();
+                }
+
+                if (!$download && !empty($recipientName) && !empty($dataActivityId)) {
+                    $download = CertificateDownload::where('recipient_name', $recipientName)
+                        ->where('data_activity_id', $dataActivityId)
+                        ->first();
+                }
+
+                if (!$download && !empty($recipientName)) {
+                    $download = CertificateDownload::where('recipient_name', $recipientName)->first();
+                }
+
+                if (!$download) {
+                    return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+                }
+
+                if ($download->isExpired()) return response()->json(['message' => 'Link preview kadaluarsa'], 410);
+
+                $filepath = 'certificates/generated/' . $download->filename;
+                if (!Storage::disk('public')->exists($filepath)) {
+                    return response()->json(['message' => 'File tidak ditemukan'], 404);
+                }
+
+                $fullpath = Storage::disk('public')->path($filepath);
+
+                return response()->stream(function () use ($fullpath) {
+                    $stream = fopen($fullpath, 'rb');
+                    if ($stream) {
+                        while (!feof($stream)) {
+                            echo fread($stream, 1024);
+                        }
+                        fclose($stream);
+                    }
+                }, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="' . basename($fullpath) . '"'
+                ]);
+            } catch (\Exception $ex) {
+                Log::error('Error in fallback previewByUserCertificate', ['error' => $ex->getMessage()]);
+                return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+            }
         } catch (\Exception $e) {
             Log::error('Error previewing PDF by user certificate', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Gagal menampilkan sertifikat peserta'], 500);
@@ -345,7 +492,50 @@ class SertifikatPesertaController extends Controller
 
             return response()->download(Storage::disk('public')->path($filepath), $download->filename);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+            // If no UserCertificate found for the user, try fallback lookups using query params
+            try {
+                $req = request();
+                $certNumber = $req->query('certificate_number');
+                $recipientName = $req->query('recipient_name');
+                $dataActivityId = $req->query('data_activity_id');
+
+                $download = null;
+                if (!empty($certNumber)) {
+                    $download = CertificateDownload::whereCertificateNumberNormalized($certNumber)->first();
+                }
+
+                if (!$download && !empty($recipientName) && !empty($dataActivityId)) {
+                    $download = CertificateDownload::where('recipient_name', $recipientName)
+                        ->where('data_activity_id', $dataActivityId)
+                        ->first();
+                }
+
+                if (!$download && !empty($recipientName)) {
+                    $download = CertificateDownload::where('recipient_name', $recipientName)->first();
+                }
+
+                if (!$download) {
+                    return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+                }
+
+                if (method_exists($download, 'isExpired') && $download->isExpired()) {
+                    return response()->json(['message' => 'Link download kadaluarsa'], 410);
+                }
+
+                $filepath = 'certificates/generated/' . $download->filename;
+                if (!Storage::disk('public')->exists($filepath)) {
+                    return response()->json(['message' => 'File tidak ditemukan'], 404);
+                }
+
+                if (method_exists($download, 'incrementDownloadCount')) {
+                    $download->incrementDownloadCount();
+                }
+
+                return response()->download(Storage::disk('public')->path($filepath), $download->filename);
+            } catch (\Exception $ex) {
+                Log::error('Error in fallback downloadByUserCertificate', ['error' => $ex->getMessage()]);
+                return response()->json(['message' => 'Sertifikat peserta tidak ditemukan'], 404);
+            }
         } catch (\Exception $e) {
             Log::error('Error downloading PDF by user certificate', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Gagal mengunduh sertifikat peserta'], 500);

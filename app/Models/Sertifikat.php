@@ -45,6 +45,7 @@ class Sertifikat extends Model
             'token' => $data['token'],
             'filename' => $data['filename'],
             'recipient_name' => $data['recipient_name'],
+            'instruktur_name' => $data['instruktur_name'] ?? null,
             'certificate_number' => $data['certificate_number'],
             'user_id' => $data['user_id'] ?? null,
             'expires_at' => $data['expires_at'] ?? null,

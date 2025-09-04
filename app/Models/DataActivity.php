@@ -49,7 +49,9 @@ class DataActivity extends Model
 
     public function peserta()
     {
-        return $this->belongsToMany(User::class, 'data_activity_user', 'data_activity_id', 'user_id');
+    return $this->belongsToMany(User::class, 'data_activity_user', 'data_activity_id', 'user_id')
+            ->withPivot('certificate_number', 'tanggal_sertifikat')
+            ->withTimestamps();
     }
 
     public function sertifikat()

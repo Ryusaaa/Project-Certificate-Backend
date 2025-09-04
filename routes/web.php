@@ -93,6 +93,7 @@ Route::prefix('sertifikat-templates')->group(function () {
     Route::post('/{id}/preview-template', [SertifikatPesertaController::class, 'previewPDF']);
     Route::post('/{id}/generate-pdf', [SertifikatPesertaController::class, 'generatePDF']);
     Route::post('/{id}/generate-bulk-pdf', [SertifikatPesertaController::class, 'generateBulkPDF']); // Endpoint Generate pakai yang ini
+    Route::post('/{id}/generate-bulk-number', [SertifikatPesertaController::class, 'generateBulkNumber']); // Generate hanya nomor sertifikat + token
     Route::get('/download/{token}', [SertifikatPesertaController::class, 'downloadPDF']);
     Route::get('/preview/{token}', [SertifikatPesertaController::class, 'previewPDFWithToken']);
     Route::get('/users/{userId}/certificates', [SertifikatPesertaController::class, 'getUserCertificates']); // Endpoint buat halaman peserta
