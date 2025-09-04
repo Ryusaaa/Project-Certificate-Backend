@@ -627,8 +627,28 @@ class SertifikatPesertaController extends Controller
         if (!is_array($elements)) {
             return [];
         }
-        
-        return array_map(function($element) use ($replacements) {
+        // Normalize replacements so callers can provide keys with or without braces
+        $normalizedReplacements = [];
+        if (is_array($replacements)) {
+            foreach ($replacements as $k => $v) {
+                // keep original key
+                $normalizedReplacements[$k] = $v;
+                // add key without surrounding braces if present
+                $without = preg_replace('/^\{+|\}+$/', '', $k);
+                if ($without !== $k) {
+                    $normalizedReplacements[$without] = $v;
+                } else {
+                    // also add with braces version for plain keys
+                    $normalizedReplacements['{' . $k . '}'] = $v;
+                }
+                // Add uppercase variants to tolerate case differences in templates
+                $normalizedReplacements[strtoupper($k)] = $v;
+                $normalizedReplacements[strtoupper($without)] = $v;
+                $normalizedReplacements['{' . strtoupper($without) . '}'] = $v;
+            }
+        }
+
+        return array_map(function($element) use ($normalizedReplacements) {
             // Deep clone untuk mencegah mutation
             $element = json_decode(json_encode($element), true);
             
@@ -641,12 +661,63 @@ class SertifikatPesertaController extends Controller
             // Process text elements
             if ($element['type'] === 'text' && isset($element['text'])) {
                 if (isset($element['placeholderType']) && $element['placeholderType'] !== 'custom') {
-                    if (isset($replacements[$element['text']])) {
-                        $element['text'] = $replacements[$element['text']];
+                    // direct match: try several normalized variants to tolerate different formats/casing
+                    $rawKey = $element['text'];
+                    $ptype = $element['placeholderType'];
+
+                    // Build candidate keys from element text and placeholderType
+                    $candidates = [];
+                    $candidates[] = $rawKey;
+                    $candidates[] = trim($rawKey, "{} ");
+                    $candidates[] = '{' . trim($rawKey, "{} ") . '}';
+                    $candidates[] = strtoupper(trim($rawKey, "{} "));
+                    $candidates[] = '{' . strtoupper(trim($rawKey, "{} ")) . '}';
+                    $candidates[] = strtolower(trim($rawKey, "{} "));
+                    $candidates[] = '{' . strtolower(trim($rawKey, "{} ")) . '}';
+
+                    // also consider placeholderType variations (some templates use english keys like 'instructure')
+                    $ptypeClean = trim($ptype);
+                    $candidates[] = $ptypeClean;
+                    $candidates[] = '{' . $ptypeClean . '}';
+                    $candidates[] = strtoupper($ptypeClean);
+                    $candidates[] = '{' . strtoupper($ptypeClean) . '}';
+                    $candidates[] = strtolower($ptypeClean);
+                    $candidates[] = '{' . strtolower($ptypeClean) . '}';
+
+                    // common synonym mapping to Indonesian placeholders used in backend
+                    $synonyms = [
+                        'instructure' => ['{INSTRUKTUR}','INSTRUKTUR','instruktur','{instruktur}'],
+                        'instructor' => ['{INSTRUKTUR}','INSTRUKTUR','instruktur','{instruktur}'],
+                        'instruktur' => ['{INSTRUKTUR}','INSTRUKTUR','instruktur','{instruktur}'],
+                        'name' => ['{NAMA}','NAMA','{NAMA}','nama'],
+                        'tanggal' => ['{TANGGAL}','TANGGAL','{TANGGAL}','tanggal','date','{date}'],
+                        'date' => ['{TANGGAL}','TANGGAL','{TANGGAL}','tanggal','{tanggal}'],
+                        'certificate_number' => ['{NOMOR}','NOMOR','{NOMOR}','nomor'],
+                        'number' => ['{NOMOR}','NOMOR','{NOMOR}','nomor']
+                    ];
+
+                    if (isset($synonyms[strtolower($ptypeClean)])) {
+                        foreach ($synonyms[strtolower($ptypeClean)] as $s) {
+                            $candidates[] = $s;
+                        }
+                    }
+
+                    foreach ($candidates as $cand) {
+                        if ($cand === null || $cand === '') continue;
+                        if (isset($normalizedReplacements[$cand])) {
+                            $element['text'] = $normalizedReplacements[$cand];
+                            Log::info('prepareElements matched placeholder', ['element_id' => $element['id'] ?? null, 'raw' => $rawKey, 'placeholderType' => $ptypeClean, 'matched' => $cand, 'value' => substr($normalizedReplacements[$cand],0,50)]);
+                            break;
+                        }
+                    }
+                    // If nothing matched, log candidates for debugging
+                    if (!isset($element['text']) || (is_string($element['text']) && in_array($element['text'], $candidates))) {
+                        Log::warning('prepareElements no replacement found for candidates', ['element_id' => $element['id'] ?? null, 'candidates' => $candidates, 'normalized_keys' => array_keys($normalizedReplacements)]);
                     }
                 } else {
-                    // Replace placeholders in custom text
-                    foreach ($replacements as $placeholder => $value) {
+                    // Replace placeholders in custom text (scan normalized keys)
+                    foreach ($normalizedReplacements as $placeholder => $value) {
+                        if ($placeholder === '') continue;
                         if (strpos($element['text'], $placeholder) !== false) {
                             $element['text'] = str_replace($placeholder, $value, $element['text']);
                         }
@@ -656,7 +727,7 @@ class SertifikatPesertaController extends Controller
             
             // Process QR code elements
             if ($element['type'] === 'qrcode') {
-                $certificateNumber = $replacements['{NOMOR}'] ?? 'DEFAULT-CERT-NUMBER';
+                $certificateNumber = $normalizedReplacements['{NOMOR}'] ?? $normalizedReplacements['NOMOR'] ?? $normalizedReplacements['NOMOR'] ?? 'DEFAULT-CERT-NUMBER';
                 $element['qrcode'] = $this->generateQrCodeDataUri($certificateNumber);
             }
             

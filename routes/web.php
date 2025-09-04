@@ -64,6 +64,9 @@ Route::post('admins/create', [UserApiController::class, 'store']);
 Route::put('admins/edit/{admin}', [UserApiController::class, 'update']);
 Route::delete('admins/delete/{admin}', [UserApiController::class, 'destroy']);
 
+// Endpoint to fix certificate number (admin)
+Route::post('certificates/fix-number', [\App\Http\Controllers\Sertifikat\SertifikatPesertaController::class, 'fixCertificateNumber']);
+
 
 // --- SERTIFIKAT TEMPLATE ROUTES ---
 Route::prefix('sertifikat-templates')->group(function () {
